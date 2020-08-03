@@ -13,7 +13,7 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
      "version": 800,
      "incrementalNumber": 12,
      "dateExpiration": "2021-05-06",
-     "size": 512,
+     "sizeOfBlocks": 512,
      "numberOfBlocks": 1024,
      }
      ```
