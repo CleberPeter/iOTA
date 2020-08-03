@@ -1,2 +1,2 @@
 # iota
-Micropython implementation of the SUIT standard for updating firmware for IoT devices.
+An OTA framework for the IoT in compliance with the Internet Engineering Task Force (IETF) Secure Update Internet of Things (SUIT)
