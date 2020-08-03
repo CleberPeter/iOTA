@@ -11,6 +11,8 @@ struct
     int version;
     int port;
     int sizeBlocks = 0;
+    int incrementalNumber = -1;
+    QString dateExpiration = "";
     bool splitInBlocks = false;
 } parametersToDeploy;
 
@@ -18,7 +20,7 @@ Mqtt mqtt;
 
 void printTip(void)
 {
-    qDebug("\n\nRun by passing parameters like:\n\n./iotaDeploy -u 1 -f firmware.bin -v 711 -sb 256 -h 192.168.0.4 -p 1883 \n\n");
+    qDebug("\n\nRun by passing parameters like:\n\n./iotaDeploy -u 1 -f firmware -v 800 -sb 512 -h localhost -p 1883 -split -d 2021-05-06 -n 11 \n\n");
 }
 
 bool intToStr(char* str, int *ret)
@@ -33,7 +35,7 @@ bool intToStr(char* str, int *ret)
 
 bool parseParameters(int argc, char *argv[])
 {
-    if (argc > 12)
+    if (argc > 14)
     {
         qDebug("Parsing Parameters ...\n\n");
         for (int i=1; i < argc; i++) // ignore first parameter
@@ -73,6 +75,21 @@ bool parseParameters(int argc, char *argv[])
                 }
             }
             else if (!strcmp(argv[i], "-split")) parametersToDeploy.splitInBlocks = true;
+            else if (!strcmp(argv[i], "-d"))
+            {
+                qDebug("dateExpiration: %s\n", argv[++i]);
+                parametersToDeploy.dateExpiration = argv[i];
+            }
+            else if (!strcmp(argv[i], "-n"))
+            {
+                qDebug("incremental number: %s\n", argv[++i]);
+
+                if (!intToStr(argv[i], &parametersToDeploy.incrementalNumber)) // failed conversion ...
+                {
+                    qDebug("\nError! Incremental Number Invalid.");
+                    return false;
+                }
+            }
             else if (!strcmp(argv[i], "-sb"))
             {
                 qDebug("block size: %s\n", argv[++i]);
@@ -90,7 +107,17 @@ bool parseParameters(int argc, char *argv[])
             }
         }
 
-        if (parametersToDeploy.splitInBlocks && !parametersToDeploy.sizeBlocks)
+        if (parametersToDeploy.incrementalNumber == -1)
+        {
+            qDebug("Error! Missing incremental number.\n");
+            return false;
+        }
+        else if (parametersToDeploy.dateExpiration == "")
+        {
+            qDebug("Error! Missing date expiration.\n");
+            return false;
+        }
+        else if (parametersToDeploy.splitInBlocks && !parametersToDeploy.sizeBlocks)
         {
             qDebug("Error! Missing the size of the blocks.\n");
             return false;
@@ -101,7 +128,6 @@ bool parseParameters(int argc, char *argv[])
     printf("Error! Missing Parameters.\n");
     return false;
 }
-
 
 int deployFirmware(void)
 {
@@ -132,7 +158,6 @@ int deployFirmware(void)
 
     if (parametersToDeploy.splitInBlocks)
     {
-
         while(true)
         {
             bytesReaded = fread(buffer, 1, parametersToDeploy.sizeBlocks, pFile);
@@ -177,7 +202,7 @@ int deployFirmware(void)
 bool deployVersion(int qtyBlocks)
 {
     QString topic = "iota/" + parametersToDeploy.uuid + "/manifest";
-    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"size\":" + QString::number(qtyBlocks) + "}";
+    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"dateExpiration\":" + parametersToDeploy.dateExpiration + ",\"incrementalNumber\":" + QString::number(parametersToDeploy.incrementalNumber) + ",\"sizeOfBlocks\":" + QString::number(parametersToDeploy.sizeBlocks) + ",\"numberOfBlocks\":" + QString::number(qtyBlocks) + "}";
     QByteArray buff_arr = msg.toUtf8();
 
     if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
