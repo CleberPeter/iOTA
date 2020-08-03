@@ -3,8 +3,6 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
 
 ### Manifest
 
-***
-
 > **Topic:** iota/\<uuid\>/manifest
 
 > **Message:** {"version":800,"size":753} 
