@@ -19,12 +19,22 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
      ```
   
 
-#### Firmware
+#### Firmware in Blocks
 
   * **Topic:** 
   
-     iota/\<uuid\>/firmware/0...\<numberOfBlocks\>
+     iota/\<uuid\>/firmware/block/0...\<numberOfBlocks\>
 
   * **Message:** 
   
      binary block of \<size\> bytes.
+
+#### Firmware Monolithic
+
+  * **Topic:** 
+  
+     iota/\<uuid\>/firmware
+
+  * **Message:** 
+  
+     binary file.

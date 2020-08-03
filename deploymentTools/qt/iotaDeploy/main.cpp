@@ -133,7 +133,6 @@ int deployFirmware(void)
 {
     FILE * pFile;
     QByteArray buff_arr;
-    char buffer[parametersToDeploy.sizeBlocks];
     QString topic;
     int pckgCounter = 0;
 
@@ -146,9 +145,9 @@ int deployFirmware(void)
     }
 
     fseek(pFile, 0L, SEEK_END);
-    int sz = ftell(pFile);
+    int fileSize = ftell(pFile);
 
-    qDebug("\nFile Size: %d\n", sz);
+    qDebug("\nFile Size: %d\n", fileSize);
 
     fseek(pFile, 0L, SEEK_SET);
 
@@ -158,6 +157,8 @@ int deployFirmware(void)
 
     if (parametersToDeploy.splitInBlocks)
     {
+        char buffer[parametersToDeploy.sizeBlocks];
+
         while(true)
         {
             bytesReaded = fread(buffer, 1, parametersToDeploy.sizeBlocks, pFile);
@@ -173,7 +174,7 @@ int deployFirmware(void)
                     qDebug() << buff_arr;
                 }
 
-                topic = "iota/"+parametersToDeploy.uuid+"/firmware/"+ QString::number(pckgCounter);
+                topic = "iota/"+parametersToDeploy.uuid+"/firmware/block/"+ QString::number(pckgCounter);
 
                 if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
                 {
@@ -188,6 +189,30 @@ int deployFirmware(void)
             else break;
         }
     }
+    else
+    {
+        char buffer[fileSize];
+        bytesReaded = fread(buffer, 1, fileSize, pFile);
+
+        if (bytesReaded != fileSize)
+        {
+            qDebug("Error. Can't Read Binary File\n");
+            return 0;
+        }
+        else
+        {
+            buff_arr = QByteArray::fromRawData(buffer, fileSize);
+            topic = "iota/"+parametersToDeploy.uuid+"/firmware";
+
+            if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
+            {
+                qDebug("Could not publish message\n");
+                return 0;
+            }
+            else pckgCounter = 2;
+        }
+    }
+
 
     pckgCounter--;
 
