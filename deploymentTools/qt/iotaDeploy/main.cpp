@@ -5,9 +5,9 @@
 
 struct
 {
-    char *device;
-    char *file;
-    char *host;
+    QString uuid;
+    QString file;
+    QString host;
     int version;
     int sizeBlocks;
     int port;
@@ -17,7 +17,7 @@ Mqtt mqtt;
 
 void printTip(void)
 {
-    printf("\n\nRun by passing parameters like:\n\n./companytecDeploy -d HRS -f firmware.bin -v 711 -sb 256 -h 192.168.0.4 -p 1883 \n\n");
+    qDebug("\n\nRun by passing parameters like:\n\n./iotaDeploy -u 1 -f firmware.bin -v 711 -sb 256 -h 192.168.0.4 -p 1883 \n\n");
 }
 
 bool intToStr(char* str, int *ret)
@@ -30,61 +30,60 @@ bool intToStr(char* str, int *ret)
     return true;
 }
 
-// ./companytecDeploy -d HRS -f firmware.bin -v 711 -sb 256 -h 192.168.0.4 -p 1883
 bool parseParameters(int argc, char *argv[])
 {
     if (argc == 13)
     {
-        printf("Parsing Parameters ...\n\n");
+        qDebug("Parsing Parameters ...\n\n");
         for (int i=1; i < argc; i++) // ignore first parameter
         {
-            if (!strcmp(argv[i], "-d"))
+            if (!strcmp(argv[i], "-u"))
             {
-                printf("device: %s\n", argv[++i]);
-                parametersToDeploy.device = argv[i];
+                qDebug("uuid: %s\n", argv[++i]);
+                parametersToDeploy.uuid = argv[i];
             }
             else if (!strcmp(argv[i], "-f"))
             {
-                printf("file: %s\n", argv[++i]);
+                qDebug("file: %s\n", argv[++i]);
                 parametersToDeploy.file = argv[i];
             }
             else if (!strcmp(argv[i], "-v"))
             {
-                printf("version: %s\n", argv[++i]);
+                qDebug("version: %s\n", argv[++i]);
 
                 if (!intToStr(argv[i], &parametersToDeploy.version)) // failed conversion ...
                 {
-                    printf("\nError! Version Invalid.");
+                    qDebug("\nError! Version Invalid.");
                     return false;
                 }
             }
             else if (!strcmp(argv[i], "-sb"))
             {
-                printf("block size: %s\n", argv[++i]);
+                qDebug("block size: %s\n", argv[++i]);
 
                 if (!intToStr(argv[i], &parametersToDeploy.sizeBlocks)) // failed conversion ...
                 {
-                    printf("\nError! Size Blocks Invalid.");
+                    qDebug("\nError! Size Blocks Invalid.");
                     return false;
                 }
             }
             else if (!strcmp(argv[i], "-h"))
             {
-                printf("broker host: %s\n", argv[++i]);
+                qDebug("broker host: %s\n", argv[++i]);
                 parametersToDeploy.host = argv[i];
             }
             else if (!strcmp(argv[i], "-p"))
             {
-                printf("broker port: %s\n", argv[++i]);
+                qDebug("broker port: %s\n", argv[++i]);
                 if (!intToStr(argv[i], &parametersToDeploy.port)) // failed conversion ...
                 {
-                    printf("\nError! Port Invalid.");
+                    qDebug("\nError! Port Invalid.");
                     return false;
                 }
             }
             else
             {
-                printf("Error! Wrong Parameter.\n");
+                qDebug("Error! Wrong Parameter.\n");
                 return false;
             }
         }
@@ -105,7 +104,7 @@ int deployFirmware(void)
     QString topic;
     int pckgCounter = 0;
 
-    pFile = fopen (parametersToDeploy.file , "rb" );
+    pFile = fopen(parametersToDeploy.file.toLocal8Bit().data() , "rb" );
 
     fseek(pFile, 0L, SEEK_END);
     int sz = ftell(pFile);
@@ -124,7 +123,7 @@ int deployFirmware(void)
 
     int bytesReaded = 0;
 
-    fread(buffer, 1, 50, pFile); // remove header
+    // fread(buffer, 1, 50, pFile); // remove header
 
     while(true)
     {
@@ -179,15 +178,15 @@ int deployFirmware(void)
     return pckgCounter;
 }
 
-bool deployVersion(int qty_blocks)
+bool deployVersion()
 {
-    QString topic = "HRS/QueryVersion/1";
-    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"size\":" + QString::number(qty_blocks) + "}";
+    QString topic = "iota/" + parametersToDeploy.uuid + "/metadata";
+    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"size\":" + QString::number(parametersToDeploy.sizeBlocks) + "}";
     QByteArray buff_arr = msg.toUtf8();
 
     if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
     {
-        printf("Could not publish message\n");
+        qDebug("Could not publish message\n");
         return false;
     }
 
@@ -196,27 +195,15 @@ bool deployVersion(int qty_blocks)
 
 bool deployUpdate(void)
 {
-    for (int i=10000; i < 10005; i++)
+    if (deployVersion())
     {
-        qDebug() << i;
-
-        QString topic = "HRS/ConsoleData/" + QString::number(i);
-
-        int sec = i%25;
-        if (!sec) sec = 1;
-
-        QString msg = "{\"DT\":\"2020-07-"+QString::number(sec)+" 08:27:47\",\"Mac\":\""+QString::number(i)+"\",\"MqttVersion\":\""+QString::number(i)+"\",\"HrsVersion\":"+QString::number(20000)+",\"CountSale\":"+QString::number(i)+",\"CountReserv\":"+QString::number(i)+"}";
-
-        QByteArray buff_arr = msg.toUtf8();
-
-        if (mqtt.client->publish(topic, buff_arr, 0, true) == -1)
+        //if (deployFirmware())
         {
-            printf("Could not publish message\n");
-            return false;
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 void mqttConnected(bool connected)
@@ -224,7 +211,6 @@ void mqttConnected(bool connected)
     if (connected)
     {
         printf("Connected! \n");
-
 
         if (!deployUpdate()) exit(-1);
         else printf("Success! Firmware Deployed.\n");

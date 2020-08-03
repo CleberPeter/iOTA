@@ -10,14 +10,14 @@ class Mqtt: public QObject
     Q_OBJECT
 public:
     Mqtt();
-    void tryConnect(char* _hostname, int _port, callback _callbackOnConnect);
+    void tryConnect(QString _hostname, int _port, callback _callbackOnConnect);
     void tryPublish(QString topicName, QByteArray msg, int qos);
 
     QMqttClient *client;
 
 private:
 
-    char* hostname;
+    QString hostname;
     int port;
     callback callbackOnConnect;
 
