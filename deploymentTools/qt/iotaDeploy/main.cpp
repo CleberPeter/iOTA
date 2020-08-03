@@ -9,8 +9,9 @@ struct
     QString file;
     QString host;
     int version;
-    int sizeBlocks;
     int port;
+    int sizeBlocks = 0;
+    bool splitInBlocks = false;
 } parametersToDeploy;
 
 Mqtt mqtt;
@@ -32,7 +33,7 @@ bool intToStr(char* str, int *ret)
 
 bool parseParameters(int argc, char *argv[])
 {
-    if (argc == 13)
+    if (argc > 12)
     {
         qDebug("Parsing Parameters ...\n\n");
         for (int i=1; i < argc; i++) // ignore first parameter
@@ -57,16 +58,6 @@ bool parseParameters(int argc, char *argv[])
                     return false;
                 }
             }
-            else if (!strcmp(argv[i], "-sb"))
-            {
-                qDebug("block size: %s\n", argv[++i]);
-
-                if (!intToStr(argv[i], &parametersToDeploy.sizeBlocks)) // failed conversion ...
-                {
-                    qDebug("\nError! Size Blocks Invalid.");
-                    return false;
-                }
-            }
             else if (!strcmp(argv[i], "-h"))
             {
                 qDebug("broker host: %s\n", argv[++i]);
@@ -81,6 +72,17 @@ bool parseParameters(int argc, char *argv[])
                     return false;
                 }
             }
+            else if (!strcmp(argv[i], "-split")) parametersToDeploy.splitInBlocks = true;
+            else if (!strcmp(argv[i], "-sb"))
+            {
+                qDebug("block size: %s\n", argv[++i]);
+
+                if (!intToStr(argv[i], &parametersToDeploy.sizeBlocks)) // failed conversion ...
+                {
+                    qDebug("\nError! Size Blocks Invalid.");
+                    return false;
+                }
+            }
             else
             {
                 qDebug("Error! Wrong Parameter.\n");
@@ -88,7 +90,12 @@ bool parseParameters(int argc, char *argv[])
             }
         }
 
-        return true;
+        if (parametersToDeploy.splitInBlocks && !parametersToDeploy.sizeBlocks)
+        {
+            qDebug("Error! Missing the size of the blocks.\n");
+            return false;
+        }
+        else return true;
     }
 
     printf("Error! Missing Parameters.\n");
@@ -106,71 +113,60 @@ int deployFirmware(void)
 
     pFile = fopen(parametersToDeploy.file.toLocal8Bit().data() , "rb" );
 
-    fseek(pFile, 0L, SEEK_END);
-    int sz = ftell(pFile);
-
-    printf("\nFile Size: %d\n", sz);
-
-    fseek(pFile, 0L, SEEK_SET);
-
     if (pFile==NULL)
     {
-        printf("Error. Can't Open Binary File\n");
+        qDebug("Error. Can't Open Binary File\n");
         return 0;
     }
 
-    printf("\nDeploying ...\n");
+    fseek(pFile, 0L, SEEK_END);
+    int sz = ftell(pFile);
+
+    qDebug("\nFile Size: %d\n", sz);
+
+    fseek(pFile, 0L, SEEK_SET);
+
+    qDebug("\nDeploying ...\n");
 
     int bytesReaded = 0;
 
-    // fread(buffer, 1, 50, pFile); // remove header
-
-    while(true)
+    if (parametersToDeploy.splitInBlocks)
     {
-        bytesReaded = fread(buffer, 1, parametersToDeploy.sizeBlocks, pFile);
-        // printf("\nReaded %d Bytes\n", bytesReaded);
 
-        if (bytesReaded > 0)
+        while(true)
         {
-            buff_arr = QByteArray::fromRawData(buffer, parametersToDeploy.sizeBlocks);
+            bytesReaded = fread(buffer, 1, parametersToDeploy.sizeBlocks, pFile);
 
-            if (bytesReaded < parametersToDeploy.sizeBlocks)
+            if (bytesReaded > 0)
             {
-                for (int i = bytesReaded; i < parametersToDeploy.sizeBlocks; i++) buff_arr[i] = 0xFF;
+                buff_arr = QByteArray::fromRawData(buffer, parametersToDeploy.sizeBlocks);
 
-                qDebug() << buff_arr;
-            }
+                if (bytesReaded < parametersToDeploy.sizeBlocks)
+                {
+                    for (int i = bytesReaded; i < parametersToDeploy.sizeBlocks; i++) buff_arr[i] = 0xFF;
 
-            /*topic = "HRS/V2/"+QString::number(parametersToDeploy.version)+"/"+ QString::number(int(pckgCounter/10)) +"/" + QString::number(pckgCounter%10);
-            if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
-            {
-                printf("Could not publish message\n");
-                return 0;
-            }*/
+                    qDebug() << buff_arr;
+                }
 
-            //if (pckgCounter != 100)
-            {
-                topic = "HRS/Vrs/1/"+ QString::number(pckgCounter);
-
-                // topic = "HRS/Version/"+QString::number(parametersToDeploy.version)+"/"+ QString::number(pckgCounter);
+                topic = "iota/"+parametersToDeploy.uuid+"/firmware/"+ QString::number(pckgCounter);
 
                 if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
                 {
-                    printf("Could not publish message\n");
+                    qDebug("Could not publish message\n");
                     return 0;
                 }
+
+                pckgCounter++;
+
+                if (bytesReaded < parametersToDeploy.sizeBlocks) break;
             }
-
-            pckgCounter++;
-
-            if (bytesReaded < parametersToDeploy.sizeBlocks) break;
+            else break;
         }
-        else break;
     }
 
     pckgCounter--;
 
-    if (bytesReaded) qDebug() << "\nPublished:" << pckgCounter << "blocks of" << parametersToDeploy.sizeBlocks << "bytes + 1 block of" << bytesReaded << "bytes." << endl;
+    if (bytesReaded) qDebug() << "\nPublished:" << pckgCounter-1 << "blocks of" << parametersToDeploy.sizeBlocks << "bytes + 1 block of" << bytesReaded << "bytes." << endl;
     else qDebug() << "\nPublished:" << pckgCounter << "blocks of" << parametersToDeploy.sizeBlocks << "bytes." << endl;
 
     fclose(pFile);
@@ -178,10 +174,10 @@ int deployFirmware(void)
     return pckgCounter;
 }
 
-bool deployVersion()
+bool deployVersion(int qtyBlocks)
 {
-    QString topic = "iota/" + parametersToDeploy.uuid + "/metadata";
-    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"size\":" + QString::number(parametersToDeploy.sizeBlocks) + "}";
+    QString topic = "iota/" + parametersToDeploy.uuid + "/manifest";
+    QString msg = "{\"version\":" + QString::number(parametersToDeploy.version) + ",\"size\":" + QString::number(qtyBlocks) + "}";
     QByteArray buff_arr = msg.toUtf8();
 
     if (mqtt.client->publish(topic, buff_arr, 2, true) == -1)
@@ -195,15 +191,9 @@ bool deployVersion()
 
 bool deployUpdate(void)
 {
-    if (deployVersion())
-    {
-        //if (deployFirmware())
-        {
-            return true;
-        }
-    }
-
-    return false;
+    int qtyBlocks = deployFirmware();
+    if (qtyBlocks && deployVersion(qtyBlocks)) return true;
+    else return false;
 }
 
 void mqttConnected(bool connected)
