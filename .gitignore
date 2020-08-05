@@ -1,2 +1,2 @@
-deploymentTools/qt/build-iotaDeploy-Desktop-Debug/
-deploymentTools/qt/iotaDeploy/iotaDeploy.pro.user
+tst.py
+__pycache__/

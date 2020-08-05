@@ -5,4 +5,8 @@ BASEDIR=$(dirname "$0")
 
 ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/main.py
 ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/suit.py
+
+ampy --port /dev/ttyUSB0 --baud 115200 rmdir /umqtt
+ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/umqtt
+
 picocom /dev/ttyUSB0 -b115200

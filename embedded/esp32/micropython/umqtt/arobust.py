@@ -1,7 +1,7 @@
 import utime
-from . import simple
+from . import asimple
 
-class MQTTClient(simple.MQTTClient):
+class MQTTClient(asimple.MQTTClient):
 
     DELAY = 2
     DEBUG = False
@@ -24,6 +24,7 @@ class MQTTClient(simple.MQTTClient):
             except OSError as e:
                 self.log(True, e)
                 i += 1
+                super().disconnect()
                 self.delay(i)
 
     def publish(self, topic, msg, retain=False, qos=0):

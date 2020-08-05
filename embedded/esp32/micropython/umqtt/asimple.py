@@ -55,7 +55,9 @@ class MQTTClient:
     def connect(self, clean_session=True):
         self.sock = socket.socket()
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
+        print('aui')
         self.sock.connect(addr)
+        print('aui2')
         if self.ssl:
             import ussl
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
@@ -100,7 +102,7 @@ class MQTTClient:
         return resp[2] & 1
 
     def disconnect(self):
-        self.sock.write(b"\xe0\0")
+        # self.sock.write(b"\xe0\0")
         self.sock.close()
 
     def ping(self):
