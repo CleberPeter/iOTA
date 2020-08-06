@@ -1,7 +1,7 @@
 import _thread
 import time
 import json
-from umqtt.arobust import MQTTClient
+from umqtt.robustModified import MQTTClient
 
 class fotaSuit:
     def __init__(self, uuid, version, hostBroker, typeDelivery = 'Push', debug = True):
