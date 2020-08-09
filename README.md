@@ -5,7 +5,7 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
 
   * **Topic:** 
   
-     iota/\<uuid\>/manifest
+     iota/\<uuid\>/\<version\>/manifest
 
   * **Message:** 
      ```json 
@@ -18,22 +18,11 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
      }
      ```
   
-
-#### Firmware in Blocks
-
-  * **Topic:** 
-  
-     iota/\<uuid\>/firmware/block/0...\<numberOfBlocks\>
-
-  * **Message:** 
-  
-     binary block of \<size\> bytes.
-
-#### Firmware Monolithic
+#### Firmware
 
   * **Topic:** 
   
-     iota/\<uuid\>/firmware
+     iota/\<uuid\>/\<version\>/firmware
 
   * **Message:** 
   
