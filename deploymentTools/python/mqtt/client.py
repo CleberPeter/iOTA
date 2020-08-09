@@ -1,27 +1,40 @@
 import paho.mqtt.client as mqtt
 import time
+import threading
 
-class mqttClient:
+class _mqttClient:
 
-    def __init__(self, debug = True):
+    def __init__(self, callbackOnConnect, debug = True):
         self.client = mqtt.Client()
         self.debug = debug
-        self.client.on_connect = self.on_connect
+        self.client.on_connect = self.onConnect
+        self.callbackOnConnect = callbackOnConnect
 
         while(True):
             try:
-                self.printDebug("Trying connection with broker ...")
+                self.printDebug("trying connection with broker ...")
                 self.client.connect("localhost", 1883, 60)
                 break
             except:
-                self.printDebug("Connection Failed ...")
+                self.printDebug("connection Failed ...")
                 time.sleep(3)
 
-        self.loop()
+        thread = threading.Thread(target=self.loop, args=())
+        thread.start()
 
-    # The callback for when the client receives a CONNACK response from the server.
-    def on_connect(self, client, userdata, flags, rc):
-        self.printDebug("Connected with result code "+str(rc))
+    def onConnect(self, client, userdata, flags, rc):
+      if (rc == mqtt.MQTT_ERR_SUCCESS):
+        self.printDebug("connected with broker.")
+        self.callbackOnConnect(True)
+      else:
+        self.callbackOnConnect(False)
+    
+    def publish(self, topic, msg, qos, retain):
+        (rc, mid) = self.client.publish(topic, msg, qos, retain)
+        if rc == mqtt.MQTT_ERR_SUCCESS:
+            return True
+        else:
+            return False
 
     def printDebug(self, msg):
         if self.debug:

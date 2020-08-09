@@ -1,7 +1,7 @@
 import argparse
 import datetime
 
-class parseArguments:
+class _parser:
     def __init__(self, debug = True):
         self.debug = debug
         parser = argparse.ArgumentParser(description = 'python tool for iota deployment')
@@ -33,8 +33,8 @@ class parseArguments:
     def parseFileExtension(self, extensions):
         fileSplitted = self.arguments.file.split(".")
         if len(fileSplitted) > 1 : # have extension ?
-            fileExtension = fileSplitted[1]
-            if fileExtension in extensions:
+            self.arguments.fileExtension = fileSplitted[1]
+            if self.arguments.fileExtension in extensions:
                 return True
             else:
                 return False
