@@ -10,20 +10,20 @@ class mqttClient:
 
         while(True):
             try:
-                self.plotDebug("Trying connection with broker ...")
+                self.printDebug("Trying connection with broker ...")
                 self.client.connect("localhost", 1883, 60)
                 break
             except:
-                self.plotDebug("Connection Failed ...")
+                self.printDebug("Connection Failed ...")
                 time.sleep(3)
 
         self.loop()
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client, userdata, flags, rc):
-        self.plotDebug("Connected with result code "+str(rc))
+        self.printDebug("Connected with result code "+str(rc))
 
-    def plotDebug(self, msg):
+    def printDebug(self, msg):
         if self.debug:
             print('mqttClient: ',  msg)
 
