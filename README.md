@@ -10,11 +10,9 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
   * **Message:** 
      ```json 
      {
-     "version": 800,
      "incrementalNumber": 12,
      "dateExpiration": "2021-05-06",
-     "sizeOfBlocks": 512,
-     "numberOfBlocks": 1024,
+     "type": "bin",
      }
      ```
   
