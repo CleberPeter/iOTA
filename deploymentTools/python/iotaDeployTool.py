@@ -7,7 +7,7 @@ from parser import _parser
 from manifest import _manifest
 
 class iotaDeployTool:
-    def __init__(self, debug = True, qos = 2):
+    def __init__(self, qos = 2):
       self.qos = qos
       self.args = _parser().arguments
       self.debug = self.args.debug
@@ -28,19 +28,6 @@ class iotaDeployTool:
       
       self.mqttObject.loop_forever()
     
-    def onPublishTopic(self, client, obj, mid):
-      
-      if self.sm == 'manifest':
-        self.printDebug("manifest published.")
-        self.sm = 'firmware'
-        self.publishUpdate()
-      elif self.sm == 'firmware':
-        print('update published with SUCCESS')
-        sys.exit()
-      else:
-        print('state invalid')
-        sys.exit()
-
     def onConnectWithBroker(self, client, userdata, flags, rc):
       if rc == _mqtt.MQTT_ERR_SUCCESS:
         self.printDebug("connected with broker.")
@@ -58,6 +45,19 @@ class iotaDeployTool:
       
       if not rc == _mqtt.MQTT_ERR_SUCCESS:
         print("can't publish manifest file.")
+        sys.exit()
+
+    def onPublishTopic(self, client, obj, mid):
+      
+      if self.sm == 'manifest':
+        self.printDebug("manifest published.")
+        self.sm = 'firmware'
+        self.publishUpdate()
+      elif self.sm == 'firmware':
+        print('update published with SUCCESS')
+        sys.exit()
+      else:
+        print('state invalid')
         sys.exit()
 
     def publishUpdate(self):
@@ -82,10 +82,8 @@ class iotaDeployTool:
       if self.debug:
           print('iotaDeployTool: ',  msg)
 
-
 def main():
-  debug = True
-  iotaDeployTool(debug)  
+  iotaDeployTool()  
 
 if __name__ == "__main__":
   main()
