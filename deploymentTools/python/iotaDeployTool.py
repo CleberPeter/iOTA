@@ -71,6 +71,8 @@ class iotaDeployTool:
 
       fileString = file.read()
 
+      self.printDebug("file size: " + str(len(fileString)))
+
       (rc, mid) = self.mqttObject.publish(topicFirmware, fileString, self.qos, True)
       
       if not rc == _mqtt.MQTT_ERR_SUCCESS:

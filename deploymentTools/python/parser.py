@@ -12,7 +12,7 @@ class _parser:
         parser.add_argument('-version', action = 'store', dest = 'version', required = True,
                             help = 'version to deploy')
         parser.add_argument('-blockSize', action = 'store', dest = 'blockSize', required = False,
-                            help = 'size of blocks', default = 512)
+                            help = 'size of blocks', default = 1024)
         parser.add_argument('-hostnameBroker', action = 'store',  dest = 'hostnameBroker', required = False, 
                              help = 'hostname broker', default = 'localhost')
         parser.add_argument('-portBroker', action = 'store',  dest = 'portBroker', required = False, 

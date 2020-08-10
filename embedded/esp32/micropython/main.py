@@ -7,8 +7,8 @@ idWifi = 'House'
 pswdWifi = 'raquel999'
 typeDelivery = 'Push'
 hostBroker = "192.168.0.103"
-UUID = "1"
-version = 1
+uuid = "1"
+version = 11 # current version
 
 def connect_wifi(id, pswd):
     sta_if = network.WLAN(network.STA_IF)
@@ -21,7 +21,7 @@ def connect_wifi(id, pswd):
     print('network ip:', sta_if.ifconfig()[0])
 
 connect_wifi(idWifi, pswdWifi)
-_fota = fotaSuit(UUID, version, hostBroker, typeDelivery, debug)
+_fota = fotaSuit(uuid, version, hostBroker, typeDelivery, debug)
 
 while True:
     # do someting ...
