@@ -2,8 +2,8 @@ import argparse
 import datetime
 
 class _parser:
-    def __init__(self, debug = True):
-        self.debug = debug
+    def __init__(self):
+        self.debug = True
         parser = argparse.ArgumentParser(description = 'python tool for iota deployment')
         parser.add_argument('-uuid', action = 'store', dest = 'uuid', required = True,
                                 help = 'universal unique identifier (uuid) of devices')
@@ -21,6 +21,8 @@ class _parser:
                              help = 'date expiration')
         parser.add_argument('-incrementalNumber', action = 'store',  dest = 'incrementalNumber', required = True, 
                             help = 'incremental Number')
+        parser.add_argument('-debug', action = 'store',  dest = 'debug', required = False, 
+                             help = 'port broker', default = "False")
         self.arguments = parser.parse_args()
         
         if not self.doParse():
@@ -42,6 +44,15 @@ class _parser:
             return False
 
     def doParse(self):
+        if self.arguments.debug.lower() == 'true':
+            self.debug = True
+        elif self.arguments.debug.lower() == 'false':
+            self.debug = False
+        else:
+            print("debug need to be true or false.")
+            return False
+        
+        self.arguments.debug = self.debug
         self.printDebug("parsing parameters ...")
         self.printDebug("uuid: " + self.arguments.uuid)
 
@@ -84,6 +95,8 @@ class _parser:
             return False
 
         self.printDebug("incrementalNumber: " + str(self.arguments.incrementalNumber))
+
+        
 
         return True        
         

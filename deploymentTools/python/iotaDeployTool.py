@@ -1,41 +1,87 @@
 import sys
+import os
 import json
-from mqtt.client import _mqttClient
+import time
+import paho.mqtt.client as _mqtt
 from parser import _parser
 from manifest import _manifest
 
 class iotaDeployTool:
     def __init__(self, debug = True, qos = 2):
-      self.debug = debug
       self.qos = qos
-      self.parserObject = _parser(self.debug)
+      self.args = _parser().arguments
+      self.debug = self.args.debug
       self.printDebug("parsed parameters.")
-      self.mqttClientObject = _mqttClient(self.onConnectWithBroker, self.debug)
+      self.mqttObject = _mqtt.Client()
+      self.mqttObject.on_connect = self.onConnectWithBroker
+      self.mqttObject.on_publish = self.onPublishTopic
+      self.sm = 'manifest'
 
-    def onConnectWithBroker(self, success):
-      if success:
-        if self.publishManifest():
-          self.printDebug("manifest published")
-        else:
-          print("can't publish manifest.")
-          exit   
+      while(True):
+        try:
+            self.printDebug("trying connection with broker ...")
+            self.mqttObject.connect(self.args.hostnameBroker, 1883, 60)
+            break
+        except:
+            self.printDebug("connection failed ...")
+            time.sleep(3)
+      
+      self.mqttObject.loop_forever()
+    
+    def onPublishTopic(self, client, obj, mid):
+      
+      if self.sm == 'manifest':
+        self.printDebug("manifest published.")
+        self.sm = 'firmware'
+        self.publishUpdate()
+      elif self.sm == 'firmware':
+        print('update published with SUCCESS')
+        sys.exit()
+      else:
+        print('state invalid')
+        sys.exit()
+
+    def onConnectWithBroker(self, client, userdata, flags, rc):
+      if rc == _mqtt.MQTT_ERR_SUCCESS:
+        self.printDebug("connected with broker.")
+        self.publishManifest()
       else:
         print("can't connect with broker.")
-        exit
+        sys.exit()
 
     def publishManifest(self):
-      topicManifest = "iota/" + self.parserObject.arguments.uuid + "/" + self.parserObject.arguments.version + "/manifest"
-      manifestObject = _manifest(self.parserObject.arguments.fileExtension, self.parserObject.arguments.dateExpiration, self.parserObject.arguments.incrementalNumber)
+      topicManifest = "iota/" + self.args.uuid + "/" + self.args.version + "/manifest"
+      manifestObject = _manifest(self.args.fileExtension, self.args.dateExpiration, self.args.incrementalNumber)
       manifestJson = json.dumps(manifestObject.__dict__)
+      
+      (rc, mid) = self.mqttObject.publish(topicManifest, manifestJson, self.qos, True)
+      
+      if not rc == _mqtt.MQTT_ERR_SUCCESS:
+        print("can't publish manifest file.")
+        sys.exit()
 
-      if self.mqttClientObject.publish(topicManifest, manifestJson, self.qos, True):
-        return True
-      else:
-        return False
+    def publishUpdate(self):
+      topicFirmware = "iota/" + self.args.uuid + "/" + self.args.version + "/firmware"
+      
+      try:
+        dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"
+        file = open(dirPath+self.args.file, "rb")
+      except:
+        print("can't open file.")
+        sys.exit()
+
+      fileString = file.read()
+
+      (rc, mid) = self.mqttObject.publish(topicFirmware, fileString, self.qos, True)
+      
+      if not rc == _mqtt.MQTT_ERR_SUCCESS:
+        print("can't publish firmware file.")
+        sys.exit()
 
     def printDebug(self, msg):
       if self.debug:
           print('iotaDeployTool: ',  msg)
+
 
 def main():
   debug = True
