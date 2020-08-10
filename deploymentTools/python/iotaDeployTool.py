@@ -10,7 +10,6 @@ class iotaDeployTool:
     def __init__(self, qos = 2):
       self.qos = qos
       self.args = _parser().arguments
-      self.debug = self.args.debug
       self.printDebug("parsed parameters.")
       self.mqttObject = _mqtt.Client()
       self.mqttObject.on_connect = self.onConnectWithBroker
@@ -79,7 +78,7 @@ class iotaDeployTool:
         sys.exit()
 
     def printDebug(self, msg):
-      if self.debug:
+      if self.args.debug:
           print('iotaDeployTool: ',  msg)
 
 def main():
