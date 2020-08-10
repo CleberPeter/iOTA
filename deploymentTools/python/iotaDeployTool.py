@@ -36,8 +36,8 @@ class iotaDeployTool:
         sys.exit()
 
     def publishManifest(self):
-      topicManifest = "iota/" + self.args.uuid + "/" + self.args.version + "/manifest"
-      manifestObject = _manifest(self.args.fileExtension, self.args.dateExpiration, self.args.incrementalNumber)
+      topicManifest = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/manifest"
+      manifestObject = _manifest(self.args.fileExtension, self.args.dateExpiration)
       manifestJson = json.dumps(manifestObject.__dict__)
       
       (rc, mid) = self.mqttObject.publish(topicManifest, manifestJson, self.qos, True)
@@ -60,7 +60,7 @@ class iotaDeployTool:
         sys.exit()
 
     def publishUpdate(self):
-      topicFirmware = "iota/" + self.args.uuid + "/" + self.args.version + "/firmware"
+      topicFirmware = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/firmware"
       
       try:
         dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"

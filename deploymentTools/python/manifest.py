@@ -1,5 +1,4 @@
 class _manifest:
-    def __init__(self, type, dateExpiration, incrementalNumber):
+    def __init__(self, type, dateExpiration):
         self.type = type
         self.dateExpiration = dateExpiration
-        self.incrementalNumber = incrementalNumber

@@ -19,8 +19,6 @@ class _parser:
                              help = 'port broker', default = 1883)
         parser.add_argument('-dateExpiration', action = 'store',  dest = 'dateExpiration', required = True, 
                              help = 'date expiration')
-        parser.add_argument('-incrementalNumber', action = 'store',  dest = 'incrementalNumber', required = True, 
-                            help = 'incremental Number')
         parser.add_argument('-debug', action = 'store',  dest = 'debug', required = False, 
                              help = 'port broker', default = "False")
         self.arguments = parser.parse_args()
@@ -61,8 +59,15 @@ class _parser:
             return False
         
         self.printDebug("file: " + self.arguments.file)
-        self.printDebug("version: " + self.arguments.version)
         
+        try:
+            self.arguments.version = int(self.arguments.version)
+        except:
+            print("version need to be an integer.")
+            return False
+        
+        self.printDebug("version: " + str(self.arguments.version))
+
         try:
             self.arguments.blockSize = int(self.arguments.blockSize)
         except:
@@ -87,16 +92,6 @@ class _parser:
             return False
 
         self.printDebug("dateExpiration: " + str(self.arguments.dateExpiration))
-
-        try:
-            self.arguments.incrementalNumber = int(self.arguments.incrementalNumber)
-        except:
-            print("incremental number need to be an integer.")
-            return False
-
-        self.printDebug("incrementalNumber: " + str(self.arguments.incrementalNumber))
-
-        
 
         return True        
         
