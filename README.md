@@ -12,6 +12,7 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
      {
      "dateExpiration": "2021-05-06",
      "type": "bin",
+     "fileSize": 1408512,
      }
      ```
   

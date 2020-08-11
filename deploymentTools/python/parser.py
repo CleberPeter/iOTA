@@ -1,3 +1,4 @@
+import os
 import argparse
 import datetime
 
@@ -11,8 +12,6 @@ class _parser:
                             help = 'file to deploy (.bin or .py)')
         parser.add_argument('-version', action = 'store', dest = 'version', required = True,
                             help = 'version to deploy')
-        parser.add_argument('-blockSize', action = 'store', dest = 'blockSize', required = False,
-                            help = 'size of blocks', default = 1024)
         parser.add_argument('-hostnameBroker', action = 'store',  dest = 'hostnameBroker', required = False, 
                              help = 'hostname broker', default = 'localhost')
         parser.add_argument('-portBroker', action = 'store',  dest = 'portBroker', required = False, 
@@ -59,6 +58,18 @@ class _parser:
             return False
         
         self.printDebug("file: " + self.arguments.file)
+
+        try:
+            dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"
+            file = open(dirPath+self.arguments.file, "rb")
+        except:
+            print("can't open file.")
+            return False
+        
+        self.arguments.fileData = file.read()
+        self.arguments.fileSize = len(self.arguments.fileData)
+
+        self.printDebug("file size: " + str(self.arguments.fileSize))
         
         try:
             self.arguments.version = int(self.arguments.version)
@@ -67,14 +78,6 @@ class _parser:
             return False
         
         self.printDebug("version: " + str(self.arguments.version))
-
-        try:
-            self.arguments.blockSize = int(self.arguments.blockSize)
-        except:
-            print("block size need to be an integer.")
-            return False
-        
-        self.printDebug("blockSize: " + str(self.arguments.blockSize))
         self.printDebug("hostnameBroker: " + self.arguments.hostnameBroker)
         
         try:

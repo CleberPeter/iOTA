@@ -58,8 +58,6 @@ class fotaSuit:
 
         else:
             self.plotDebug("topic not recognitzed: " + msgType)
-
-
     
     def parseTopic(self, topicStr):
         topicSplitted = topicStr.split("/")
