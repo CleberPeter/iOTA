@@ -20,8 +20,11 @@ def connect_wifi(id, pswd):
             pass
     print('network ip:', sta_if.ifconfig()[0])
 
+def onReceiveUpdate(filename):
+    print("update received: " + filename)
+
 connect_wifi(idWifi, pswdWifi)
-_fota = fotaSuit(uuid, version, hostBroker, typeDelivery, debug)
+_fota = fotaSuit(uuid, version, hostBroker, onReceiveUpdate, typeDelivery, debug)
 
 while True:
     # do someting ...
