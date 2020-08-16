@@ -32,7 +32,7 @@ def connect_wifi(_id, _pswd):
         sta_if.connect(_id, _pswd)
         while not sta_if.isconnected():
             pass
-    print('network ip:', sta_if.ifconfig(None)[0])
+    print('network ip:', sta_if.ifconfig()[0])
 
 def on_receive_update(_filename):
     """
@@ -45,10 +45,11 @@ def on_receive_update(_filename):
     """
 
     print("update received: " + _filename)
-
+"""
 connect_wifi(ID_WIFI, PSWD_WIFI)
 FOTA = FotaSuit(UUID, VERSION, HOST_BROKER, on_receive_update, TYPE_DELIVERY, DEBUG)
 
 while True:
     # do someting ...
     time.sleep(1)
+"""

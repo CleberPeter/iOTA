@@ -1,0 +1,7 @@
+# Without OTA
+>>> os.statvfs("")
+(4096, 4096, 506, 505, 505, 0, 0, 0, 0, 255)  # 505*4096B of memory free
+
+# With OTA
+>>> os.statvfs("")
+(4096, 4096, 240, 237, 237, 0, 0, 0, 0, 255) # 237*4096B of memory free

@@ -2,7 +2,6 @@
 Implementation of OTA for ESP32 according to the SUIT specification
 """
 import os
-import socket
 import time
 import json
 import _thread
@@ -63,8 +62,8 @@ class FotaSuit:
             if not self.mqtt_client.connect(clean_session=_clean_session):
                 self.plot_debug("connected on broker.")
                 return True
-        except socket.error as msg:
-            self.plot_debug("fail to connect on broker: " + msg)
+        except:
+            self.plot_debug("fail to connect on broker.")
             return False
 
     def subscribe_on_topic(self, _topic):
@@ -103,9 +102,11 @@ class FotaSuit:
             self.parse_manifest(msg_str)
 
         elif msg_type == 'firmware':
-
             if self.update_file_size == 0:
-                os.remove('firmware.bin')
+                try:
+                    os.remove('firmware.bin') # file may not exist
+                except:
+                    pass
                 self.update_file = open('firmware.bin', 'a')
 
             self.update_file_size += len(_message)
