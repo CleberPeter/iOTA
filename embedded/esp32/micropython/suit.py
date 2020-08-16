@@ -1,115 +1,197 @@
+"""
+Implementation of OTA for ESP32 according to the SUIT specification
+"""
 import os
+import socket
 import time
 import json
 import _thread
 from umqttIota.robust import MQTTClient
 
-class fotaSuit:
-    def __init__(self, uuid, version, hostBroker, callbackOnReceiveUpdate, typeDelivery = 'Push', debug = True):
-        self.hostBroker = hostBroker
-        self.debug = debug
-        self.uuid = uuid
-        self.version = version+1 # search by next version
-        self.typeDelivery = typeDelivery
-        self.mqttClient = MQTTClient("fotaSuit-" + uuid, self.hostBroker)
-        self.mqttClient.DEBUG = self.debug
-        self.mqttClient.set_callback(self.mqttPublishReceived)
-        self.firmwareBytes = 0
-        self.callbackOnReceiveUpdate = callbackOnReceiveUpdate
-        
-        if not (self.typeDelivery == 'Push' or self.typeDelivery == 'Pull'):
+class FotaSuit:
+    """
+        Implementation of OTA for ESP32 according to the SUIT specification.
+
+        Args:
+            _uuid (string): universal unique id from device.
+            _version (integer): current version from device.
+            _host_broker (string): address from broker.
+            _callback_on_receive_update (function): called when upgrade file received.
+            _delivery_type (string, optional): update search strategy pass: 'Pull' or 'Push'.
+                                                Default is 'Push'.
+            _debug (boolean, optional): enable debug from class. Default is True.
+        Returns:
+            object from class
+    """
+    def __init__(self, _uuid, _version, _host_broker, _callback_on_receive_update, \
+                    _delivery_type='Push', _debug=True):
+        self.host_broker = _host_broker
+        self.debug = _debug
+        self.uuid = _uuid
+        self.version = _version+1 # search by next version
+        self.delivery_type = _delivery_type
+        self.mqtt_client = MQTTClient("fotaSuit-" + _uuid, self.host_broker)
+        self.mqtt_client.DEBUG = self.debug
+        self.mqtt_client.set_callback(self.publish_received)
+        self.update_file_size = 0
+        self.update_file = None
+        self.manifest = None
+        self.callback_on_receive_update = _callback_on_receive_update
+
+        if not (self.delivery_type == 'Push' or self.delivery_type == 'Pull'):
             raise ValueError("'type' variable not supported. Try 'Pull' or 'Push'.")
 
-        while (not self.connectOnBroker(True)):
-            self.plotDebug("trying connection with broker...")
+        while not self.connect_on_broker(True):
+            self.plot_debug("trying connection with broker...")
             time.sleep(3)
-        
-        self.subscribeOnTopic("manifest") # waiting for manifest file
+
+        self.subscribe_on_topic("manifest") # waiting for manifest file
         _thread.start_new_thread(self.loop, ())
-        self.plotDebug("initialized.")
-    
-    
-    def connectOnBroker(self, cleanSession):
+        self.plot_debug("initialized.")
+
+    def connect_on_broker(self, _clean_session):
+        """
+            try connection with MQTT broker.
+
+            Args:
+                _clean_session (boolean): clean session with broker.
+            Returns:
+                boolean indicating status of connection.
+        """
+
         try:
-            if not self.mqttClient.connect(clean_session=cleanSession):
-                self.plotDebug("connected on broker.")
+            if not self.mqtt_client.connect(clean_session=_clean_session):
+                self.plot_debug("connected on broker.")
                 return True
-        except:
+        except socket.error as msg:
+            self.plot_debug("fail to connect on broker: " + msg)
             return False
 
-    def subscribeOnTopic(self, topic):
-        self.mqttClient.subscribe(("iota/"+self.uuid+"/"+str(self.version)+"/"+topic).encode())
-        self.plotDebug("subscribed on topic: " + topic)
+    def subscribe_on_topic(self, _topic):
+        """
+            subscribe on iota topic: iota/<uuid>/<version>/_topic
 
-    def mqttPublishReceived(self, topic, msg):
-        
-        topicStr = topic.decode("utf-8")
-        self.plotDebug("topic received: " + topicStr)
-        msgType = self.parseTopic(topicStr)
-        
-        if (msgType == 'manifest'):
-            msgStr = msg.decode("utf-8")
-            self.plotDebug("msg received: " + msgStr)
-            
-            self.plotDebug("manifest identified.")
-            self.parseManifest(msgStr)
+            Args:
+                _topic (string): topic name to subscribe.
+            Returns:
+                void.
+        """
 
-        elif (msgType == 'firmware'):
+        self.mqtt_client.subscribe(("iota/"+self.uuid+"/"+str(self.version)+"/"+_topic).encode())
+        self.plot_debug("subscribed on topic: " + _topic)
 
-            if self.firmwareBytes == 0:
+    def publish_received(self, _topic, _message):
+        """
+            publish received on iota topic: iota/<uuid>/<version>/_topic
+
+            Args:
+                _topic (string): topic name from received message.
+                _message (string): message received.
+            Returns:
+                void.
+        """
+
+        topic_str = _topic.decode("utf-8")
+        self.plot_debug("topic received: " + topic_str)
+        msg_type = self.parse_topic(topic_str)
+
+        if msg_type == 'manifest':
+            msg_str = _message.decode("utf-8")
+            self.plot_debug("msg received: " + msg_str)
+
+            self.plot_debug("manifest identified.")
+            self.parse_manifest(msg_str)
+
+        elif msg_type == 'firmware':
+
+            if self.update_file_size == 0:
                 os.remove('firmware.bin')
-                self.file = open('firmware.bin', 'a')
+                self.update_file = open('firmware.bin', 'a')
 
-            self.firmwareBytes += len(msg)
-            self.file.write(msg)
-            
-            if self.firmwareBytes == self.manifest['fileSize']:
-                self.plotDebug("firmware file received: " + str(self.firmwareBytes))
-                self.firmwareBytes = 0
-                self.file.close()
-                self.callbackOnReceiveUpdate("firmware.bin")
+            self.update_file_size += len(_message)
+            self.update_file.write(_message)
+
+            if self.update_file_size == self.manifest['fileSize']:
+                self.plot_debug("firmware file received: " + str(self.update_file_size))
+                self.update_file_size = 0
+                self.update_file.close()
+                self.callback_on_receive_update("firmware.bin")
             else:
-                self.plotDebug("received: " + str(self.firmwareBytes) + " bytes")
-                
+                self.plot_debug("received: " + str(self.update_file_size) + " bytes")
+
         else:
-            self.plotDebug("topic not recognitzed: " + msgType)
-    
-    def parseTopic(self, topicStr):
-        topicSplitted = topicStr.split("/")
-        
-        # /iota/uuid/version/type
-        if (len(topicSplitted) == 4 and topicSplitted[1] == self.uuid and topicSplitted[2] == str(self.version)): # is for me and version is the desired one?
-            return topicSplitted[3]
+            self.plot_debug("topic not recognitzed: " + msg_type)
+
+    def parse_topic(self, _topic_str):
+        """
+            parse iota topic: iota/<uuid>/<version>/<type>.
+            Check if topic is valid and from iota.
+
+            Args:
+                _topic_str (string): topic name.
+            Returns:
+                <type> of topic.
+        """
+
+        topic_splitted = _topic_str.split("/")
+
+        # is for me and version is the desired one?
+        if (len(topic_splitted) == 4 and topic_splitted[1] == self.uuid \
+                and topic_splitted[2] == str(self.version)):
+            return topic_splitted[3]
         else:
             return ""
 
-    def parseManifest(self, msgStr):
+    def parse_manifest(self, _manifest_str):
+        """
+            parse manifest file:
+                {
+                "dateExpiration": "2021-05-06",
+                "type": "bin",
+                "fileSize": 1408512,
+                }
 
+            Args:
+                _manifest_str (string): manifest file in string format.
+            Returns:
+                boolean indicating status of parsing.
         """
-        {
-        "dateExpiration": "2021-05-06",
-        "type": "bin",
-        "fileSize": 1408512,
-        }
-        """
-        
+
         try:
-            self.manifest = json.loads(msgStr)
-        except:
-            self.plotDebug("error. Json invalid.")
+            self.manifest = json.loads(_manifest_str)
+        except ValueError:
+            self.plot_debug("error. Json invalid.")
             return False
-        
-        # TODO: check others informations like dateExpiration
-        if (self.manifest['type'] == "bin"):
-            self.plotDebug('new version avaliable.')
-            self.subscribeOnTopic("firmware")
-        
-        return True
-        
-    def loop(self):
-        while True:
-            self.mqttClient.wait_msg()
 
-    def plotDebug(self, msg):
+        # TODO: check others informations like dateExpiration
+        if self.manifest['type'] == "bin":
+            self.plot_debug('new version avaliable.')
+            self.subscribe_on_topic("firmware")
+
+        return True
+
+    def loop(self):
+        """
+            eternal loop necessary to process MQTT stack.
+
+            Args:
+                void.
+            Returns:
+                never returns.
+        """
+
+        while True:
+            self.mqtt_client.wait_msg()
+
+    def plot_debug(self, _message):
+        """
+            print debug messages.
+
+            Args:
+                _message (string): message to plot.
+            Returns:
+                void.
+        """
+
         if self.debug:
-            print('fotasuit: ',  msg)
+            print('fotasuit: ', _message)

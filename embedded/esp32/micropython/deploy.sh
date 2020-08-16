@@ -3,8 +3,8 @@
 
 BASEDIR=$(dirname "$0")
 
-#ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/main.py
-ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/suit.py
+ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/main.py
+#ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/suit.py
 
 #ampy --port /dev/ttyUSB0 --baud 115200 rmdir /umqttIota
 #ampy --port /dev/ttyUSB0 --baud 115200 mkdir /umqttIota
