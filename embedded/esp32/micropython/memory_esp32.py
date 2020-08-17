@@ -26,7 +26,7 @@ class Memory:
         self.plot_debug("current partition:" + str(cur.info()))
 
         if not cur_name.startswith("ota_"):
-            print("FotaSuit: skipping... Partition table not adapted to OTA")
+            print("memory_esp32: skipping... Partition table not adapted to OTA")
             raise SystemExit
 
         self.partition = cur.get_next_update()
