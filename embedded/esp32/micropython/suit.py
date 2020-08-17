@@ -29,7 +29,7 @@ class FotaSuit:
         self.uuid = _uuid
         self.version = _version+1 # search by next version
         self.delivery_type = _delivery_type
-        self.mqtt_client = MQTTClient("fotaSuit-" + _uuid, self.host_broker)
+        self.mqtt_client = MQTTClient("FotaSuit-" + _uuid, self.host_broker)
         self.mqtt_client.DEBUG = self.debug
         self.mqtt_client.set_callback(self.publish_received)
         self.update_file_size = 0
