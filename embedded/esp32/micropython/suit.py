@@ -1,15 +1,15 @@
 """
-Implementation of OTA for ESP32 according to the SUIT specification
+Implementation of OTA with MQTT Broker according to the SUIT specification for IoT devices.
 """
-import os
 import time
 import json
 import _thread
 from umqttIota.robust import MQTTClient
+from memory_esp32 import Memory
 
 class FotaSuit:
     """
-        Implementation of OTA for ESP32 according to the SUIT specification.
+        Implementation of OTA with MQTT Broker according to the SUIT specification for IoT devices.
 
         Args:
             _uuid (string): universal unique id from device.
@@ -33,8 +33,8 @@ class FotaSuit:
         self.mqtt_client.DEBUG = self.debug
         self.mqtt_client.set_callback(self.publish_received)
         self.update_file_size = 0
-        self.update_file = None
         self.manifest = None
+        self.memory = Memory(self.debug)
         self.callback_on_receive_update = _callback_on_receive_update
 
         if not (self.delivery_type == 'Push' or self.delivery_type == 'Pull'):
@@ -63,7 +63,7 @@ class FotaSuit:
                 self.plot_debug("connected on broker.")
                 return True
         except:
-            self.plot_debug("fail to connect on broker.")
+            self.plot_debug("fail to connect with broker.")
             return False
 
     def subscribe_on_topic(self, _topic):
@@ -84,17 +84,17 @@ class FotaSuit:
             publish received on iota topic: iota/<uuid>/<version>/_topic
 
             Args:
-                _topic (string): topic name from received message.
-                _message (string): message received.
+                _topic (bytes): topic name from received message.
+                _message (bytes): message received.
             Returns:
                 void.
         """
 
         topic_str = _topic.decode("utf-8")
-        self.plot_debug("topic received: " + topic_str)
         msg_type = self.parse_topic(topic_str)
 
         if msg_type == 'manifest':
+            self.plot_debug("topic received: " + topic_str)
             msg_str = _message.decode("utf-8")
             self.plot_debug("msg received: " + msg_str)
 
@@ -102,26 +102,31 @@ class FotaSuit:
             self.parse_manifest(msg_str)
 
         elif msg_type == 'firmware':
-            if self.update_file_size == 0:
-                try:
-                    os.remove('firmware.bin') # file may not exist
-                except:
-                    pass
-                self.update_file = open('firmware.bin', 'a')
 
-            self.update_file_size += len(_message)
-            self.update_file.write(_message)
+            size_message = len(_message)
+            self.update_file_size += size_message
+            self.print_progress_download()
+            self.memory.write(_message)
 
             if self.update_file_size == self.manifest['fileSize']:
-                self.plot_debug("firmware file received: " + str(self.update_file_size))
+                self.memory.flush() # save remaining bytes
                 self.update_file_size = 0
-                self.update_file.close()
-                self.callback_on_receive_update("firmware.bin")
-            else:
-                self.plot_debug("received: " + str(self.update_file_size) + " bytes")
+                self.callback_on_receive_update()
 
         else:
             self.plot_debug("topic not recognitzed: " + msg_type)
+
+    def print_progress_download(self):
+        """
+            writes the update file download progress
+
+            Args:
+                void
+            Returns:
+                void.
+        """
+        progress = 100*self.update_file_size/self.manifest['fileSize']
+        self.plot_debug("downloading update: "+str(progress)+"%")
 
     def parse_topic(self, _topic_str):
         """

@@ -3,6 +3,7 @@ Usage example of class fotaSuit
 """
 import time
 import network
+import os
 from suit import FotaSuit
 
 DEBUG = True
@@ -34,22 +35,22 @@ def connect_wifi(_id, _pswd):
             pass
     print('network ip:', sta_if.ifconfig()[0])
 
-def on_receive_update(_filename):
+def on_receive_update():
     """
         Callback, called when upgrade file received from fotaSuit.
 
         Args:
-            _filename (string): filename of file received.
+            void
         Returns:
             void
     """
 
-    print("update received: " + _filename)
-"""
+    print("update received!")
+
+print('current version: ' + os.uname()[3])
 connect_wifi(ID_WIFI, PSWD_WIFI)
 FOTA = FotaSuit(UUID, VERSION, HOST_BROKER, on_receive_update, TYPE_DELIVERY, DEBUG)
 
 while True:
     # do someting ...
     time.sleep(1)
-"""
