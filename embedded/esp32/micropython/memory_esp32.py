@@ -48,7 +48,7 @@ class Memory:
             write data on OTA slot memory.
             the partition module only allows the writing of entire pages in flash memory.
             then this function stores the data in RAM until it is possible to write an
-            entire page in the flash memory.
+            entire page.
 
             Args:
                 _data (bytes): data to write on OTA slot.
