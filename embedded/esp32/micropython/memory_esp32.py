@@ -1,7 +1,6 @@
 """
     Implementation of memory management for esp32.
 """
-import machine
 from esp32 import Partition
 
 PAGE_SIZE = 4096 # page size memory of esp32
@@ -96,7 +95,6 @@ class Memory:
 
         self.write_on_memory()
         self.partition.set_boot()
-        machine.reset()
 
     def plot_debug(self, _message):
         """

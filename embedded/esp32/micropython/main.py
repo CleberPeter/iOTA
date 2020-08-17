@@ -4,6 +4,7 @@ Usage example of class fotaSuit
 import time
 import network
 import os
+import machine
 from suit import FotaSuit
 
 DEBUG = True
@@ -46,6 +47,7 @@ def on_receive_update():
     """
 
     print("update received!")
+    machine.reset()
 
 print('current version: ' + os.uname()[3])
 connect_wifi(ID_WIFI, PSWD_WIFI)
