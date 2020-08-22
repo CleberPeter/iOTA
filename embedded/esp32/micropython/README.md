@@ -6,7 +6,7 @@ Implementation of the iota framework in micropython for esp32
 
 Below are listed the necessary adjustments so that this OTA implementation can be used in esp32
 
-1) Micropython Firmware
+### Micropython Firmware
 
 The micropython firmware applied to esp32 needs to be adapted to run OTA. The suitability refers mainly to the partition table of esp32, by default the table used by micropython is shown below:
 
@@ -40,7 +40,7 @@ $ make BOARD=GENERIC_OTA
 
 Another alternative is the use of micropython firmware adapted to OTA, available at: (https://github.com/CleberPeter/iota/blob/master/embedded/esp32/micropython/firmware_ota.bin), which is based on version 1.12 of micropython and was used for testing the implementation of this framework.
 
-2) MQTT library for Micropython
+### MQTT library for Micropython
 
 The standard library for MQTT in micropython umqtt available at: (https://github.com/micropython/micropython-lib) has some flaws.
 
