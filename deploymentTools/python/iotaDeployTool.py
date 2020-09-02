@@ -38,10 +38,16 @@ class iotaDeployTool:
     def publishManifest(self):
       
       topicManifest = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/manifest"
-      
-      manifestObject = _manifest(self.args.fileExtension, self.args.dateExpiration, self.args.fileSize)
-      manifestJson = json.dumps(manifestObject.__dict__)
-      
+      manifestClass = _manifest(self.args.uuid, self.args.version, self.args.fileExtension, self.args.dateExpiration, self.args.fileSize)
+      manifestObject = manifestClass.__dict__
+
+      try:
+        manifestJson = json.dumps(manifestObject)
+      except Exception as e:
+        print("can't create manifest JSON. Error:")
+        print(e)
+        sys.exit()
+
       (rc, mid) = self.mqttObject.publish(topicManifest, manifestJson, self.qos, True)
       
       if not rc == _mqtt.MQTT_ERR_SUCCESS:
