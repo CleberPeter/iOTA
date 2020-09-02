@@ -11,6 +11,8 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
      ```json 
      {
      "dateExpiration": "2021-05-06",
+     "uuid": "\<uuid\>",
+     "version": \<version\>,
      "type": "bin",
      "fileSize": 1408512,
      }
