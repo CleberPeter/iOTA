@@ -20,16 +20,41 @@ class Memory:
         self.update_file_pages_counter = 0
         self.update_file_page_data = bytearray()
 
-        cur = Partition(Partition.RUNNING)
-        cur_name = cur.info()[4]
-        self.plot_debug("current partition:" + str(cur.info()))
+        current_partition = Partition(Partition.RUNNING)
+        current_partition_name = current_partition.info()[4]
 
-        if not cur_name.startswith("ota_"):
+        self.plot_debug("current partition:" + str(current_partition.info()))
+
+        if not current_partition_name.startswith("ota_"): # firmware is adapted to OTA ?
             print("memory_esp32: skipping... Partition table not adapted to OTA")
             raise SystemExit
 
-        self.partition = cur.get_next_update()
+        self.partition = current_partition.get_next_update()
         self.plot_debug("next partition:" + str(self.partition.info()))
+
+    def get_current_partition_name(self):
+        """
+            returns current partition name.
+
+            Args:
+                void.
+            Returns:
+                string with current partition name (ota_0 or ota_1).
+        """
+        cur = Partition(Partition.RUNNING)
+        return cur.info()[4]
+
+    def get_next_partition_name(self):
+        """
+            returns next partition name.
+            next partition is the partition wich will be booted after upgrade.
+
+            Args:
+                void.
+            Returns:
+                string with next partition name (ota_0 or ota_1).
+        """
+        return self.partition.info()[4]
 
     def write_on_memory(self):
         """
