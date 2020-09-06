@@ -38,7 +38,8 @@ class iotaDeployTool:
     def publishManifest(self):
       
       topicManifest = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/manifest"
-      manifestClass = _manifest(self.args.uuid, self.args.version, self.args.fileExtension, self.args.dateExpiration, self.args.fileSize)
+      
+      manifestClass = _manifest(self.args.uuid, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes)
       manifestObject = manifestClass.__dict__
 
       try:
@@ -59,22 +60,27 @@ class iotaDeployTool:
       if self.sm == 'manifest':
         self.printDebug("manifest published.")
         self.sm = 'firmware'
-        self.publishUpdate()
+        self.indexFiles = 0
+        self.publishUpdate(self.indexFiles)
+        self.indexFiles += 1
       elif self.sm == 'firmware':
-        print('update published with SUCCESS')
-        sys.exit()
+        if self.indexFiles < len(self.args.filesNames):
+          self.publishUpdate(self.indexFiles)
+          self.indexFiles += 1
+        else:
+          print('update published with SUCCESS')
+          sys.exit()
       else:
         print('state invalid')
         sys.exit()
 
-    def publishUpdate(self):
-      
-      topicFirmware = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/firmware"
-      (rc, mid) = self.mqttObject.publish(topicFirmware, self.args.fileData, self.qos, True)
-      
-      if not rc == _mqtt.MQTT_ERR_SUCCESS:
-        print("can't publish firmware file.")
-        sys.exit()
+    def publishUpdate(self, filesIndex):
+        topicFirmware = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/" + self.args.filesNames[filesIndex]
+        (rc, mid) = self.mqttObject.publish(topicFirmware, self.args.filesData[filesIndex], self.qos, True)
+        
+        if not rc == _mqtt.MQTT_ERR_SUCCESS:
+          print("can't publish firmware file.")
+          sys.exit()
 
     def printDebug(self, msg):
       if self.args.debug:

@@ -2,14 +2,27 @@ import os
 import argparse
 import datetime
 
+def parseFileExtension(file, desiredExtension):
+    fileSplitted = file.split(".")
+    if len(fileSplitted) == 2 : # is name_file.extension ?
+        extension = fileSplitted[1]
+        if extension == desiredExtension:
+            return True
+        else:
+            return False
+    else:
+        return False
+
 class _parser:
     def __init__(self):
         self.debug = True
         parser = argparse.ArgumentParser(description = 'python tool for iota deployment')
         parser.add_argument('-uuid', action = 'store', dest = 'uuid', required = True,
                                 help = 'universal unique identifier (uuid) of devices')
-        parser.add_argument('-file', action = 'store', dest = 'file', required = True,
-                            help = 'file to deploy (.bin or .py)')
+        parser.add_argument('-files', action = 'store', dest = 'files', required = True,
+                            help = 'files to deploy (.bin or .py)')
+        parser.add_argument('-type', action = 'store', dest = 'type', required = True,
+                            help = 'type of update (bin or py)')
         parser.add_argument('-version', action = 'store', dest = 'version', required = True,
                             help = 'version to deploy')
         parser.add_argument('-hostnameBroker', action = 'store',  dest = 'hostnameBroker', required = False, 
@@ -29,18 +42,11 @@ class _parser:
         if self.debug:
             print('parseArguments: ',  msg)
 
-    def parseFileExtension(self, extensions):
-        fileSplitted = self.arguments.file.split(".")
-        if len(fileSplitted) > 1 : # have extension ?
-            self.arguments.fileExtension = fileSplitted[1]
-            if self.arguments.fileExtension in extensions:
-                return True
-            else:
-                return False
-        else:
-            return False
-
     def doParse(self):
+        self.arguments.filesData = []
+        self.arguments.filesSizes = []
+        self.arguments.filesNames = []
+
         if self.arguments.debug.lower() == 'true':
             self.debug = True
         elif self.arguments.debug.lower() == 'false':
@@ -53,23 +59,52 @@ class _parser:
         self.printDebug("parsing parameters ...")
         self.printDebug("uuid: " + self.arguments.uuid)
 
-        if not self.parseFileExtension(["bin","py"]):
-            print("extension not supported.")
-            return False
-        
-        self.printDebug("file: " + self.arguments.file)
+        if self.arguments.type == "bin":
+            if parseFileExtension(self.arguments.files, "bin"):
+                try:
+                    dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"
+                    file = open(dirPath+self.arguments.files, "rb")
+                except:
+                    print("can't open file.")
+                    return False
+                
+                data = file.read()
+                self.arguments.filesNames.append("firmware")
+                self.arguments.filesData.append(data)
+                self.arguments.filesSizes.append(len(data))
+                file.close()
+            else:
+                print("extension file not supported.")
+                return False 
+        elif self.arguments.type == "py":
 
-        try:
-            dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"
-            file = open(dirPath+self.arguments.file, "rb")
-        except:
-            print("can't open file.")
-            return False
-        
-        self.arguments.fileData = file.read()
-        self.arguments.fileSize = len(self.arguments.fileData)
+            self.arguments.files = self.arguments.files.split(",") # can be multiple files
+            
+            for file_name in self.arguments.files:
 
-        self.printDebug("file size: " + str(self.arguments.fileSize))
+                if not parseFileExtension(file_name, "py"):
+                    print("extension file not supported.")
+                    return False
+
+                try:
+                    dirPath = os.path.dirname(os.path.realpath(__file__)) + "/"
+                    file = open(dirPath+file_name, "rb")
+                except:
+                    print("can't open file.")
+                    return False
+                
+                data = file.read()
+                self.arguments.filesNames.append(file_name)
+                self.arguments.filesData.append(data)
+                self.arguments.filesSizes.append(len(data))
+                file.close()
+
+        else:
+            print("type of update not supported.")
+            return False
+
+        self.printDebug("files: " + str(self.arguments.filesNames))
+        self.printDebug("files size: " + str(self.arguments.filesSizes))
         
         try:
             self.arguments.version = int(self.arguments.version)
