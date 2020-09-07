@@ -1,6 +1,6 @@
 class _manifest:
-    def __init__(self, _uuid, _version, _type, _dateExpiration, _filesNames, _filesSizes):
-        self.uuid = _uuid
+    def __init__(self, _uuidProject, _version, _type, _dateExpiration, _filesNames, _filesSizes):
+        self.uuidProject = _uuidProject
         self.version = _version
         self.type = _type
         self.dateExpiration = _dateExpiration

@@ -37,9 +37,9 @@ class iotaDeployTool:
 
     def publishManifest(self):
       
-      topicManifest = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/manifest"
+      topicManifest = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/manifest"
       
-      manifestClass = _manifest(self.args.uuid, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes)
+      manifestClass = _manifest(self.args.uuidProject, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes)
       manifestObject = manifestClass.__dict__
 
       try:
@@ -75,7 +75,7 @@ class iotaDeployTool:
         sys.exit()
 
     def publishUpdate(self, filesIndex):
-        topicFirmware = "iota/" + self.args.uuid + "/" + str(self.args.version) + "/" + self.args.filesNames[filesIndex]
+        topicFirmware = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/" + self.args.filesNames[filesIndex]
         (rc, mid) = self.mqttObject.publish(topicFirmware, self.args.filesData[filesIndex], self.qos, True)
         
         if not rc == _mqtt.MQTT_ERR_SUCCESS:

@@ -17,8 +17,8 @@ class _parser:
     def __init__(self):
         self.debug = True
         parser = argparse.ArgumentParser(description = 'python tool for iota deployment')
-        parser.add_argument('-uuid', action = 'store', dest = 'uuid', required = True,
-                                help = 'universal unique identifier (uuid) of devices')
+        parser.add_argument('-uuidProject', action = 'store', dest = 'uuidProject', required = True,
+                                help = 'universal unique identifier (uuid) of project')
         parser.add_argument('-files', action = 'store', dest = 'files', required = True,
                             help = 'files to deploy (.bin or .py)')
         parser.add_argument('-type', action = 'store', dest = 'type', required = True,
@@ -57,7 +57,7 @@ class _parser:
         
         self.arguments.debug = self.debug
         self.printDebug("parsing parameters ...")
-        self.printDebug("uuid: " + self.arguments.uuid)
+        self.printDebug("Project: " + self.arguments.uuidProject)
 
         if self.arguments.type == "bin":
             if parseFileExtension(self.arguments.files, "bin"):
