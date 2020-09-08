@@ -41,7 +41,6 @@ class FotaSuit:
         _current_partition = self.memory.get_current_partition_name()
         _next_partition = self.memory.get_next_partition_name()
 
-        self.manifest = Manifest(_uuid_project, _version, _current_partition, _next_partition)
         self.callback_on_receive_update = _callback_on_receive_update
 
         if not (self.delivery_type == 'Push' or self.delivery_type == 'Pull'):
@@ -51,8 +50,14 @@ class FotaSuit:
             self.print_debug("trying connection with broker...")
             time.sleep(3)
 
-        # waiting for manifest file
-        self.subscribe_on_topic(self.manifest.get_next_version(), "manifest")
+        self.manifest = Manifest(_current_partition, _next_partition)
+
+        if self.manifest.make_update(_uuid_project, _version):
+            #TODO: insert other informations in message like date
+            _msg = '{"uuidDevice":"'+_id_device+'", "uuidProject":"'+_uuid_project+'", "version":'+str(self.manifest.version)+'}' 
+            self.publish_on_topic("updated", _msg)
+
+        self.subscribe_on_topic("manifest") # waiting for manifest file
         _thread.start_new_thread(self.loop, ())
         self.print_debug("initialized.")
 
@@ -74,21 +79,36 @@ class FotaSuit:
             self.print_debug("fail to connect with broker.")
             return False
 
-    def subscribe_on_topic(self, _version, _topic):
+    def subscribe_on_topic(self, _topic):
         """
-            subscribe on iota topic: iota/<uuid>/<version>/_topic
+            subscribe on iota topic: iota/<uuidProject>/<version>/_topic
 
             Args:
-                _version (int): topic version to subscribe.
                 _topic (string): topic name to subscribe.
             Returns:
                 void.
         """
 
-        _topic = "iota/"+self.manifest.uuid_project+"/"+str(_version)+"/"+_topic
+        _topic = "iota/"+self.manifest.uuid_project+"/"+str(self.manifest.get_next_version())+"/"+_topic
 
         self.mqtt_client.subscribe(_topic.encode())
         self.print_debug("subscribed on topic: " + _topic)
+
+    def publish_on_topic(self, _topic, _msg):
+        """
+            publish on iota topic: iota/<uuidProject>/<version>/_topic
+
+            Args:
+                _topic (string): topic name to publish.
+                _msg (string): message to publish.
+            Returns:
+                void.
+        """
+
+        _topic = "iota/"+self.manifest.uuid_project+"/"+str(self.manifest.get_next_version())+"/"+_topic
+
+        self.mqtt_client.publish(_topic.encode(), _msg.encode())
+        self.print_debug("published on topic: " + _topic + " msg:" + _msg)
 
     def publish_received(self, _topic, _message):
         """
@@ -102,31 +122,31 @@ class FotaSuit:
         """
 
         topic_str = _topic.decode("utf-8")
-        msg_type = self.parse_topic(topic_str)
+        topic_type = self.parse_topic(topic_str)
 
-        if msg_type == 'manifest':
+        if topic_type == 'manifest':
             self.print_debug("topic received: " + topic_str)
             msg_str = _message.decode("utf-8")
             self.print_debug("msg received: " + msg_str)
 
             if self.manifest.save_new(msg_str):
                 self.print_debug('new version avaliable.')
-                self.subscribe_on_topic(self.manifest.version, "firmware")
+                self.subscribe_on_topic(self.manifest.new_files[0]['name']) # subscribe to receive update files
 
-        elif msg_type == 'firmware':
+        elif topic_type == self.manifest.new_files[0]['name']:
 
             size_message = len(_message)
             self.update_file_size += size_message
             self.print_progress_download()
             self.memory.write(_message)
 
-            if self.update_file_size == self.manifest.file_size:
+            if self.update_file_size == self.manifest.new_files[0]['size']:
                 self.memory.flush() # save remaining bytes
                 self.update_file_size = 0
                 self.callback_on_receive_update()
 
         else:
-            self.print_debug("topic not recognitzed: " + msg_type)
+            self.print_debug("topic not recognitzed: " + topic_type)
 
     def parse_topic(self, _topic_str):
         """
@@ -145,7 +165,12 @@ class FotaSuit:
         if len(topic_splitted) == 4 and topic_splitted[0] == "iota":
             # is for me ?
             if topic_splitted[1] == self.manifest.uuid_project:
-                return topic_splitted[3]
+                # version is the desired one
+                if topic_splitted[2] == str(self.manifest.get_next_version()):
+                    return topic_splitted[3]
+
+                if topic_splitted[2] == str(self.manifest.version):
+                    self.print_debug("device up to date")
 
         return ""
 
@@ -158,7 +183,7 @@ class FotaSuit:
             Returns:
                 void.
         """
-        progress = 100*self.update_file_size/self.manifest.file_size
+        progress = 100*self.update_file_size/self.manifest.new_files[0]['size']
         self.print_debug("downloading update: "+str(progress)+"%")
 
     def loop(self):

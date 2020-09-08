@@ -6,51 +6,39 @@ import json
 
 class Manifest:
     """
-        load the current device manifest.
-        Will be loaded from the last downloaded manifest or a default manifest will be created
-        with the uuid of project and versions passed as a parameter by the user
+        initialize manifest class
 
         Args:
-            _uuid_project (string): universal unique id from project to create a default manifest
-                            (only used if not exists an local manifest).
-            _version (integer): current version of device to create a default manifest
-                            (only used if not exists an local manifest).
             _current_partition_name (string): used to verify an success of upgrade,
                                               must be the same as determined by the update manifest
             _next_partition_name (string): attached to the manifest to determine which
                                            partition should be booted after the upgrade
             _debug (boolean, optional): enable debug from class. Default is True.
         Returns:
-            boolean indicating status of requisition.
+            object from class.
     """
-    def __init__(self, _uuid_project, _version, _current_partition_name, \
-                _next_partition_name, _debug=True):
+    def __init__(self, _current_partition_name, _next_partition_name, _debug=True):
 
         self.debug = _debug
         self.current_partition_name = _current_partition_name
         self.next_partition_name = _next_partition_name
 
-        self.update(_uuid_project, _version)
-
-        _manifest_file = open('manifest.json', 'r')
-        _manifest_str = _manifest_file.read()
-        _manifest_file.close()
-
-        self.load(_manifest_str)
-        self.print_debug("current manifest:\n" + _manifest_str)
-
-    def update(self, _uuid_project, _version):
+    def make_update(self, _uuid_project, _version):
         """
-            update manifest to newest version if necessary.
-
+            execute update of manifest, if necessary.
+            Will be loaded from the last downloaded manifest or a default manifest will be created
+            with the uuid of project and versions passed as a parameter by the user
+            
             Args:
                 _uuid_project (string): universal unique id from project to create a default manifest
                                 (only used if not exists an local manifest).
                 _version (integer): current version of device to create a default manifest
                                 (only used if not exists an local manifest).
             Returns:
-                void.
+                boolean indicating if an update was effected
         """
+
+        _updated = False
         files = os.listdir()
 
         # create default manifest, if necessary. (only in first execution)
@@ -73,16 +61,27 @@ class Manifest:
                     _manifest_file = open('manifest.json', 'w')
                     _manifest_file.write(_manifest_str)
                     _manifest_file.close()
+
                     self.print_debug('update manifest with success.')
+                    _updated = True
                 else:
                     self.print_debug('failed to update.')
+
             except ValueError:
                 self.print_debug("error. invalid manifest file.")
-                return False
 
             os.remove('_manifest.json')
         else:
             self.print_debug('manifest already up to date.')
+
+        _manifest_file = open('manifest.json', 'r')
+        _manifest_str = _manifest_file.read()
+        _manifest_file.close()
+
+        self.load(_manifest_str)
+        self.print_debug("current manifest:\n" + _manifest_str)
+
+        return _updated
 
     def save(self, _new_manifest_object):
         """
@@ -105,7 +104,9 @@ class Manifest:
         _manifest_file.close()
 
         #TODO: check this question!
-        self.load(_new_manifest_str) # for now, reloads manifest in RAM.
+        # self.load(_new_manifest_str) # for now, only reloads manifest in RAM after reboot.
+
+        self.new_files = dict(_new_manifest_object['files']) # update files is stored here!
 
         return True
 
