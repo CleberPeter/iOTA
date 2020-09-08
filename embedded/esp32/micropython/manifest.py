@@ -8,10 +8,10 @@ class Manifest:
     """
         load the current device manifest.
         Will be loaded from the last downloaded manifest or a default manifest will be created
-        with the uuid and versions passed as a parameter by the user
+        with the uuid of project and versions passed as a parameter by the user
 
         Args:
-            _uuid (string): universal unique id from device to create a default manifest
+            _uuid_project (string): universal unique id from project to create a default manifest
                             (only used if not exists an local manifest).
             _version (integer): current version of device to create a default manifest
                             (only used if not exists an local manifest).
@@ -23,14 +23,14 @@ class Manifest:
         Returns:
             boolean indicating status of requisition.
     """
-    def __init__(self, _uuid, _version, _current_partition_name, \
+    def __init__(self, _uuid_project, _version, _current_partition_name, \
                 _next_partition_name, _debug=True):
 
         self.debug = _debug
         self.current_partition_name = _current_partition_name
         self.next_partition_name = _next_partition_name
 
-        self.update(_uuid, _version)
+        self.update(_uuid_project, _version)
 
         _manifest_file = open('manifest.json', 'r')
         _manifest_str = _manifest_file.read()
@@ -39,12 +39,12 @@ class Manifest:
         self.load(_manifest_str)
         self.print_debug("current manifest:\n" + _manifest_str)
 
-    def update(self, _uuid, _version):
+    def update(self, _uuid_project, _version):
         """
             update manifest to newest version if necessary.
 
             Args:
-                _uuid (string): universal unique id from device to create a default manifest
+                _uuid_project (string): universal unique id from project to create a default manifest
                                 (only used if not exists an local manifest).
                 _version (integer): current version of device to create a default manifest
                                 (only used if not exists an local manifest).
@@ -56,7 +56,7 @@ class Manifest:
         # create default manifest, if necessary. (only in first execution)
         if not 'manifest.json' in files:
             _manifest_file = open('manifest.json', 'x')
-            _manifest_str = self.get_default(_uuid, _version)
+            _manifest_str = self.get_default(_uuid_project, _version)
             _manifest_file.write(_manifest_str)
             _manifest_file.close()
 
@@ -104,17 +104,17 @@ class Manifest:
         _manifest_file.write(_new_manifest_str)
         _manifest_file.close()
 
-        return True
-
         #TODO: check this question!
-        # self.load(_new_manifest_str) # for now, only reloads manifest in RAM when reboot.
+        self.load(_new_manifest_str) # for now, reloads manifest in RAM.
+
+        return True
 
     def save_new(self, _str):
         """
             set new manifest file:
                 {
                 "dateExpiration": "2021-05-06",
-                "uuid": "uuid",
+                "uuidProject": "uuid",
                 "version": version,
                 "type": "bin",
                 "fileSize": 1408512,
@@ -133,7 +133,7 @@ class Manifest:
             return False
 
         # is for this device and is the desired version ?
-        if _manifest_object['uuid'] == self.uuid and \
+        if _manifest_object['uuidProject'] == self.uuid_project and \
            _manifest_object['version'] == self.get_next_version():
 
             # TODO: check others informations like dateExpiration
@@ -158,26 +158,27 @@ class Manifest:
         """
         try:
             _manifest_object = json.loads(_manifest_str)
-            self.uuid = _manifest_object['uuid']
+            self.uuid_project = _manifest_object['uuidProject']
             self.version = _manifest_object['version']
             self.date_expiration = _manifest_object['dateExpiration']
             self.type = _manifest_object['type']
-            self.file_size = _manifest_object['fileSize']
+            self.file_size = _manifest_object['files'][0]['size']
         except ValueError:
             raise ValueError("can't load manifest file.")
 
-    def get_default(self, _uuid, _version):
+    def get_default(self, _uuid_project, _version):
         """
-            returns default manifest file with _uuid and _version provided.
+            returns default manifest file with _uuid_project and _version provided.
 
             Args:
-                _uuid (string): universal unique id from device.
+                _uuid_project (string): universal unique id from project.
                 _version (integer): Current version of device.
             Returns:
                 string with minimal manifest.
         """
-        _default_manifest = '{"uuid":"' + _uuid + '", "version":' + str(_version)
-        _default_manifest += ', "dateExpiration": "", type: "", fileSize: 0}'
+        _default_manifest = '{"uuidProject":"' + _uuid_project + '", "version":' + str(_version)
+        _default_manifest += ', "dateExpiration": "", "type": ""'
+        _default_manifest += ', "files": [{"name": "", "size": 0}]}'
 
         return _default_manifest
 

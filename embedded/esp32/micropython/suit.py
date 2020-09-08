@@ -12,8 +12,9 @@ class FotaSuit:
         Implementation of OTA with MQTT Broker according to the SUIT specification for IoT devices.
 
         Args:
-            _uuid (string): universal unique id from device
+            _uuid_project (string): universal unique id from project
                             (only used if not exists an local manifest).
+            _id_device (string): id from device inside project.
             _version (integer): Current version of device
                             (only used if not exists an local manifest).
             _host_broker (string): address from broker.
@@ -24,21 +25,23 @@ class FotaSuit:
         Returns:
             object from class
     """
-    def __init__(self, _uuid, _version, _host_broker, _callback_on_receive_update, \
+    def __init__(self, _uuid_project, _id_device, _version, _host_broker, _callback_on_receive_update, \
                     _delivery_type='Push', _debug=True):
         self.host_broker = _host_broker
         self.debug = _debug
         self.delivery_type = _delivery_type
-        self.mqtt_client = MQTTClient("FotaSuit-" + _uuid, self.host_broker)
+
+        _id_on_broker = "FotaSuit-" + _uuid_project + "-" + _id_device
+        self.mqtt_client = MQTTClient(_id_on_broker, self.host_broker) 
         self.mqtt_client.DEBUG = self.debug
         self.mqtt_client.set_callback(self.publish_received)
-        self.update_file_size = 0
 
+        self.update_file_size = 0
         self.memory = Memory(self.debug)
         _current_partition = self.memory.get_current_partition_name()
         _next_partition = self.memory.get_next_partition_name()
 
-        self.manifest = Manifest(_uuid, _version, _current_partition, _next_partition)
+        self.manifest = Manifest(_uuid_project, _version, _current_partition, _next_partition)
         self.callback_on_receive_update = _callback_on_receive_update
 
         if not (self.delivery_type == 'Push' or self.delivery_type == 'Pull'):
@@ -82,7 +85,7 @@ class FotaSuit:
                 void.
         """
 
-        _topic = "iota/"+self.manifest.uuid+"/"+str(_version)+"/"+_topic
+        _topic = "iota/"+self.manifest.uuid_project+"/"+str(_version)+"/"+_topic
 
         self.mqtt_client.subscribe(_topic.encode())
         self.print_debug("subscribed on topic: " + _topic)
@@ -108,7 +111,7 @@ class FotaSuit:
 
             if self.manifest.save_new(msg_str):
                 self.print_debug('new version avaliable.')
-                self.subscribe_on_topic(self.manifest.get_next_version(), "firmware")
+                self.subscribe_on_topic(self.manifest.version, "firmware")
 
         elif msg_type == 'firmware':
 
@@ -141,13 +144,8 @@ class FotaSuit:
         # message is from IOTA ?
         if len(topic_splitted) == 4 and topic_splitted[0] == "iota":
             # is for me ?
-            if topic_splitted[1] == self.manifest.uuid:
-                # version is the desired one
-                if topic_splitted[2] == str(self.manifest.get_next_version()):
-                    return topic_splitted[3]
-
-                if topic_splitted[2] == str(self.manifest.version):
-                    self.print_debug("device up to date")
+            if topic_splitted[1] == self.manifest.uuid_project:
+                return topic_splitted[3]
 
         return ""
 

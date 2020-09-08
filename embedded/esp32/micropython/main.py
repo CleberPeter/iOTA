@@ -13,7 +13,8 @@ ID_WIFI = 'House'
 PSWD_WIFI = 'raquel999'
 TYPE_DELIVERY = 'Push'
 HOST_BROKER = "192.168.0.103"
-UUID = "1" # universal unique id from device (only used if not exists an local manifest).
+UUID_PROJECT = "1" # universal unique id from project (only used if not exists an local manifest).
+ID_DEVICE = "1" # id from device inside project.
 VERSION = 11 # current version of device (only used if not exists an local manifest).
 
 sta_if = network.WLAN(network.STA_IF)
@@ -56,7 +57,7 @@ while True:
     connect_wifi(ID_WIFI, PSWD_WIFI)
 
     try:
-        FOTA = FotaSuit(UUID, VERSION, HOST_BROKER, on_receive_update, TYPE_DELIVERY, DEBUG)
+        FOTA = FotaSuit(UUID_PROJECT, ID_DEVICE, VERSION, HOST_BROKER, on_receive_update, TYPE_DELIVERY, DEBUG)
     except Exception as error:
         print(error)
         sys.exit()
