@@ -4,7 +4,7 @@ An OTA framework for the IoT in compliance with the Internet Engineering Task Fo
 
 ## Topology
 
-This framework uses a centralized approach for the storage of update files where the update procedure can be initiated either by the server, PUSH approach, or initiated by the device, PULL strategy.
+This framework uses a centralized approach for the storage of update files where the update procedure can be initiated either by the server, PUSH approach, or initiated by the device, PULL approach.
 
 The hybrid strategy for disseminating the update is made possible through an MQTT broker which retains all files necessary for the update. A manifest file present in a Broker topic tells the device whether an update exists or not, as well as the parameters required to perform the update.
 
@@ -14,17 +14,26 @@ The PULL approach is used when devices subscribe to the manifest topic in order 
 
 * This framework uses an MQTT broker as a file repository, as a consequence an MQTT broker must exist on the update server and the MQTT protocol must be implemented by the embedded device.
 
-* In this framework devices of the same model and manufacturer must have a unique identifier called unique universal identifier \<uuid\>, which can be composed through the company domain + device model as follows:
+* In this structure, devices of the same model and manufacturer must have a unique identifier called the project's unique universal identifier \ <uuidProject \>, which can be composed through the company's domain + device model as follows:
 
 ```python
-<uuid> = SHA256("G3PD.com.br" + "temperature_sensor_A")
+company_domain = "G3PD.com.br"
+model_device = "temperature_sensor_A"
+<uuidProject> = SHA4(company_domain + model_device)
+``` 
+
+* Each device within the same project must have a unique identifier called \ <idDevice \> which can be obtained as follows:
+
+```python
+serial_number_from_device = "12345"
+<idDevice> = SHA4(<uuidProject> + serial_number_from_device)
 ``` 
 
 * The software/firmware <version> of the devices is an incremental numeric value. The device always updates to the immediately later version, that is, for a device that is currently running version 101, it must be updated to version 102 regardless of the fact that there are already new versions (103, 104, ...) available. This strategy aims to make the strategy of differential updates viable.
 
 ## Topics in Broker
 
-All topics present in the broker are intended for a set of specific devices mapped through its \<uuid\> that have a specific software/firmware version defined through the \<version\> field.
+All topics present in the broker are intended for a set of specific devices mapped through its \<uuidProject\> that have a specific software/firmware version defined through the \<version\> field.
 
 #### Manifest
 
@@ -32,7 +41,7 @@ A manifest file is used to signal the device for an update, as well as to pass t
 
   * **Topic:** 
   
-     iota/\<uuid\>/\<version\>/manifest
+     iota/\<uuidProject\>/\<version\>/manifest
 
 The current implementation for the manifest file uses the JSON standard and follows:
 
@@ -40,8 +49,8 @@ The current implementation for the manifest file uses the JSON standard and foll
      ```json 
      {
      "dateExpiration": "2021-05-06",
-     "uuid": "\<uuid\>",
-     "version": \<version\>,
+     "uuidProject": "<uuidProject>",
+     "version": <version>,
      "type": "bin",
      "fileSize": 1408512,
      }
@@ -53,9 +62,9 @@ The type field defines the type of update. Currently two types **bin** and **py*
 
 The fileSize field indicates the size in bytes of the update file.
 
-#### Firmware
+#### Monolithic Update
 
-After discovering the existence of an update the device must subscribe to this topic through which it can obtain the update file in binary format
+After discovering the existence of a **bin** update, the device must subscribe to this topic through which it can obtain the update file in binary format:
 
   * **Topic:** 
   
@@ -64,6 +73,22 @@ After discovering the existence of an update the device must subscribe to this t
   * **Message:** 
   
      binary file.
+     
+#### Modular Update 
+
+After discovering the existence of a **py** update, the device must subscribe to all topics listed in the manifest file, only after downloading all files can the device start the update.
+
+  * **Topic:** 
+  
+     iota/\<uuid\>/\<version\>/file_1.py
+     
+     iota/\<uuid\>/\<version\>/file_2.py
+     
+     iota/\<uuid\>/\<version\>/file_x.py
+
+  * **Messages:** 
+  
+     ASCII file.
 
 ## Implementations
 
