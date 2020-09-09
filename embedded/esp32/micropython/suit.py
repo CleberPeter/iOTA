@@ -52,7 +52,7 @@ class FotaSuit:
 
         self.manifest = Manifest(_current_partition, _next_partition)
 
-        if self.manifest.make_update(_uuid_project, _version):
+        if self.manifest.load_and_update(_uuid_project, _version):
             #TODO: insert other informations in message like date
             _msg = '{"uuidDevice":"'+_id_device+'", "uuidProject":"'+_uuid_project+'", "version":'+str(self.manifest.version)+'}' 
             self.publish_on_topic("updated", _msg)

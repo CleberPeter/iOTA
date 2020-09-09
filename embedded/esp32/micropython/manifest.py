@@ -23,11 +23,11 @@ class Manifest:
         self.current_partition_name = _current_partition_name
         self.next_partition_name = _next_partition_name
 
-    def make_update(self, _uuid_project, _version):
+    def load_and_update(self, _uuid_project, _version):
         """
-            execute update of manifest, if necessary.
-            Will be loaded from the last downloaded manifest or a default manifest will be created
-            with the uuid of project and versions passed as a parameter by the user
+            the manifest will be loaded from the last downloaded manifest or a default manifest will be created
+            with the uuid of project and version passed as a parameter by the user.
+            if necessary, the manifest will be updated to new manifest present in _manifest.json file
             
             Args:
                 _uuid_project (string): universal unique id from project to create a default manifest
@@ -78,7 +78,7 @@ class Manifest:
         _manifest_str = _manifest_file.read()
         _manifest_file.close()
 
-        self.load(_manifest_str)
+        self.load(_manifest_str) # load manifest
         self.print_debug("current manifest:\n" + _manifest_str)
 
         return _updated
