@@ -205,18 +205,6 @@ class Manifest:
         """
         return self.version+1
 
-    def get_previous_version(self):
-        """
-            returns the previous version based on the standard established
-            by IOTA framework for version management.
-
-            Args:
-                void.
-            Returns:
-                integer with previous version.
-        """
-        return self.version-1
-
     def print_debug(self, _message):
         """
             print debug messages.
