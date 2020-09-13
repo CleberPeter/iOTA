@@ -101,7 +101,7 @@ After an upgrade device notify the update server through the following topic:
 
   * **Topic:** 
   
-     iota/<uuidProject>/<idDevice>/<version>/updated
+     iota/\<uuidProject\>/\<idDevice\>/\<version\>/updated
 
   * **Messages:** 
   
