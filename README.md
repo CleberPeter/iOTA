@@ -48,12 +48,17 @@ The current implementation for the manifest file uses the JSON standard and foll
   * **Message:** 
      ```json 
      {
-     "dateExpiration": "2021-05-06",
-     "uuidProject": "<uuidProject>",
-     "version": <version>,
-     "type": "bin",
-     "fileSize": 1408512,
-     }
+          "uuidProject": "1",
+          "version": 14,
+          "type": "bin",
+          "dateExpiration": "2020-06-05",
+          "files": [
+              {
+              "name": "firmware",
+              "size": 1376016
+              }
+          ]
+      }
      ```
 
 The dateExpiration field defines the cut-off date for the update to be applied and aims to protect against security attacks on eclipsed devices.
@@ -89,6 +94,25 @@ After discovering the existence of a **py** update, the device must subscribe to
   * **Messages:** 
   
      ASCII file.
+     
+#### Updated 
+
+After an upgrade device notify the update server through the following topic:
+
+  * **Topic:** 
+  
+     iota/<uuidProject>/<idDevice>/<version>/updated
+
+  * **Messages:** 
+  
+     ```json 
+     {
+     "idDevice": "<idProject>",
+     "uuidProject": "<uuidProject>",
+     "version": <version>,
+     "date": "<date_of_upgrade>",
+     }
+     ```
 
 ## Implementations
 
