@@ -53,12 +53,14 @@ class FotaSuit:
 
         self.manifest = Manifest(_current_partition, _next_partition)
 
-        if self.manifest.load_and_update(_uuid_project, _version): # notify the upgrade
-
-            #TODO: insert other informations in message like date
+        if self.manifest.load_and_update(_uuid_project, _version): 
+            
+            # notify the upgrade
             _version = str(self.manifest.version)
             _msg = '{"idDevice":"'+self.id_device+'", "uuidProject":"'+_uuid_project+'"'
             _msg += ', "version":'+_version+', "date": ""}'
+
+            #TODO: insert other informations in message like date
             self.publish_on_topic(_version, "updated", _msg)
 
         self.subscribe_on_topic("manifest") # waiting for manifest file
