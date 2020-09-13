@@ -1,4 +1,4 @@
-# iota at esp32
+# iota at ESP32
 
 Implementation of the iota framework in micropython for esp32
 
@@ -49,3 +49,9 @@ The first, discussed here: (https://github.com/CleberPeter/micropython-lib/commi
 The second, discussed here (https://github.com/CleberPeter/micropython-lib/commit/a55d72d21d4d2a985fab3ae81b5d40d40d6a0d6a), refers to the fact that the original implementation does not provide for receiving a message larger than the device's TCP window. However, a firmware update for micropython usually has more than 1MB.
 
 Alternatively a fork of the library maintained here: (https://github.com/CleberPeter/micropython-lib) fix these problems.
+
+### Micropython ESP32 OTA Support
+
+https://github.com/micropython/micropython/commit/05eb897d06cc4da04dd96f3b661b617b98cb6800
+
+https://github.com/micropython/micropython/pull/5856/files
