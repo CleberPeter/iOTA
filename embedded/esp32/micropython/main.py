@@ -14,7 +14,7 @@ PSWD_WIFI = 'raquel999'
 TYPE_DELIVERY = 'Push'
 HOST_BROKER = "192.168.0.103"
 UUID_PROJECT = "1" # universal unique id from project (only used if not exists an local manifest).
-ID_DEVICE = "1" # id from device inside project.
+ID_DEVICE = "84" # id from device inside project.
 VERSION = 11 # current version of device (only used if not exists an local manifest).
 
 sta_if = network.WLAN(network.STA_IF)

@@ -22,15 +22,22 @@ class Manifest:
         self.debug = _debug
         self.current_partition_name = _current_partition_name
         self.next_partition_name = _next_partition_name
+        self.uuid_project = ''
+        self.version = 0
+        self.date_expiration = ''
+        self.type = ''
+        self.new_files = []
 
     def load_and_update(self, _uuid_project, _version):
         """
-            the manifest will be loaded from the last downloaded manifest or a default manifest will be created
-            with the uuid of project and version passed as a parameter by the user.
-            if necessary, the manifest will be updated to new manifest present in _manifest.json file
-            
+            the manifest will be loaded from the last downloaded manifest or a default
+            manifest will be created with the uuid of project and version passed
+            as a parameter by the user.
+            if necessary, the manifest will be updated to new manifest present in
+            _manifest.json file.
+
             Args:
-                _uuid_project (string): universal unique id from project to create a default manifest
+                _uuid_project (string): universal unique id from project to create default manifest
                                 (only used if not exists an local manifest).
                 _version (integer): current version of device to create a default manifest
                                 (only used if not exists an local manifest).
@@ -106,19 +113,23 @@ class Manifest:
         #TODO: check this question!
         # self.load(_new_manifest_str) # for now, only reloads manifest in RAM after reboot.
 
-        self.new_files = dict(_new_manifest_object['files']) # update files is stored here!
-
+        self.new_files = _new_manifest_object['files'].copy() # update files is stored here!
         return True
 
     def save_new(self, _str):
         """
             set new manifest file:
                 {
-                "dateExpiration": "2021-05-06",
-                "uuidProject": "uuid",
-                "version": version,
-                "type": "bin",
-                "fileSize": 1408512,
+                    "uuidProject": "1",
+                    "version": 14,
+                    "type": "bin",
+                    "dateExpiration": "2020-06-05",
+                    "files": [
+                        {
+                        "name": "firmware",
+                        "size": 1376016
+                        }
+                    ]
                 }
 
             Args:
@@ -163,7 +174,6 @@ class Manifest:
             self.version = _manifest_object['version']
             self.date_expiration = _manifest_object['dateExpiration']
             self.type = _manifest_object['type']
-            self.file_size = _manifest_object['files'][0]['size']
         except ValueError:
             raise ValueError("can't load manifest file.")
 
@@ -194,6 +204,18 @@ class Manifest:
                 integer with new version.
         """
         return self.version+1
+
+    def get_previous_version(self):
+        """
+            returns the previous version based on the standard established
+            by IOTA framework for version management.
+
+            Args:
+                void.
+            Returns:
+                integer with previous version.
+        """
+        return self.version-1
 
     def print_debug(self, _message):
         """

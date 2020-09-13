@@ -25,14 +25,15 @@ class FotaSuit:
         Returns:
             object from class
     """
-    def __init__(self, _uuid_project, _id_device, _version, _host_broker, _callback_on_receive_update, \
-                    _delivery_type='Push', _debug=True):
+    def __init__(self, _uuid_project, _id_device, _version, _host_broker, \
+                    _callback_on_receive_update, _delivery_type='Push', _debug=True):
         self.host_broker = _host_broker
         self.debug = _debug
         self.delivery_type = _delivery_type
+        self.id_device = _id_device
 
-        _id_on_broker = "FotaSuit-" + _uuid_project + "-" + _id_device
-        self.mqtt_client = MQTTClient(_id_on_broker, self.host_broker) 
+        _id_on_broker = "FotaSuit-" + _uuid_project + "-" + self.id_device
+        self.mqtt_client = MQTTClient(_id_on_broker, self.host_broker)
         self.mqtt_client.DEBUG = self.debug
         self.mqtt_client.set_callback(self.publish_received)
 
@@ -52,10 +53,13 @@ class FotaSuit:
 
         self.manifest = Manifest(_current_partition, _next_partition)
 
-        if self.manifest.load_and_update(_uuid_project, _version):
+        if self.manifest.load_and_update(_uuid_project, _version): # notify the upgrade
+
             #TODO: insert other informations in message like date
-            _msg = '{"uuidDevice":"'+_id_device+'", "uuidProject":"'+_uuid_project+'", "version":'+str(self.manifest.version)+'}' 
-            self.publish_on_topic("updated", _msg)
+            _version = str(self.manifest.version)
+            _msg = '{"idDevice":"'+self.id_device+'", "uuidProject":"'+_uuid_project+'"'
+            _msg += ', "version":'+_version+', "date": ""}'
+            self.publish_on_topic(_version, "updated", _msg)
 
         self.subscribe_on_topic("manifest") # waiting for manifest file
         _thread.start_new_thread(self.loop, ())
@@ -88,26 +92,26 @@ class FotaSuit:
             Returns:
                 void.
         """
-
-        _topic = "iota/"+self.manifest.uuid_project+"/"+str(self.manifest.get_next_version())+"/"+_topic
+        _next_version = str(self.manifest.get_next_version())
+        _topic = "iota/"+self.manifest.uuid_project+"/"+_next_version+"/"+_topic
 
         self.mqtt_client.subscribe(_topic.encode())
         self.print_debug("subscribed on topic: " + _topic)
 
-    def publish_on_topic(self, _topic, _msg):
+    def publish_on_topic(self, _version, _topic, _msg):
         """
-            publish on iota topic: iota/<uuidProject>/<version>/_topic
+            publish on iota topic: iota/<uuidProject>/<idDevice>/<version>/_topic
 
             Args:
+                _version (string): version to publish.
                 _topic (string): topic name to publish.
                 _msg (string): message to publish.
             Returns:
                 void.
         """
+        _topic = "iota/"+self.manifest.uuid_project+"/"+self.id_device+"/"+_version+"/"+_topic
 
-        _topic = "iota/"+self.manifest.uuid_project+"/"+str(self.manifest.get_next_version())+"/"+_topic
-
-        self.mqtt_client.publish(_topic.encode(), _msg.encode())
+        self.mqtt_client.publish(_topic.encode(), _msg.encode(), True) # retain this message!
         self.print_debug("published on topic: " + _topic + " msg:" + _msg)
 
     def publish_received(self, _topic, _message):
@@ -131,7 +135,8 @@ class FotaSuit:
 
             if self.manifest.save_new(msg_str):
                 self.print_debug('new version avaliable.')
-                self.subscribe_on_topic(self.manifest.new_files[0]['name']) # subscribe to receive update files
+                _name_new_file = self.manifest.new_files[0]['name']
+                self.subscribe_on_topic(_name_new_file) # subscribe to receive update files
 
         elif topic_type == self.manifest.new_files[0]['name']:
 
