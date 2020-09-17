@@ -74,7 +74,7 @@ while True:
 
     print('waiting for version: ' + str(FOTA.manifest.get_next_version()))
 
-    tst.updated_function(789)
+    tst.updated_function(0)
 
     while True:
         # do someting ...

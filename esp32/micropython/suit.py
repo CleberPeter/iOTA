@@ -1,6 +1,7 @@
 """
 Implementation of OTA with MQTT Broker according to the SUIT specification for IoT devices.
 """
+import os
 import time
 import _thread
 from umqttIota.robust import MQTTClient
@@ -54,7 +55,10 @@ class FotaSuit:
 
         self.manifest = Manifest(_next_partition)
         self.manifest.load(_uuid_project, _version)
-        """
+
+        files = os.listdir()
+        if '_updated.iota' in files: #have an update ?
+
             # notify the upgrade
             _version = str(self.manifest.version)
             _msg = '{"idDevice":"'+self.id_device+'", "uuidProject":"'+_uuid_project+'"'
@@ -62,7 +66,8 @@ class FotaSuit:
 
             #TODO: insert other informations in message like date
             self.publish_on_topic(_version, "updated", _msg)
-        """
+            os.remove('_updated.iota')
+            
         
         self.subscribe_task = "manifest" # waiting for manifest file
         _thread.start_new_thread(self.loop, ())

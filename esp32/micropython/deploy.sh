@@ -20,7 +20,7 @@ then
     ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/boot.py
     #ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/main.py
     #ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/tst_class.py
-    #ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/suit.py
+    ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/suit.py
     #ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/memory_esp32.py
     #ampy --port /dev/ttyUSB0 --baud 115200 put "$BASEDIR"/manifest.py
 
