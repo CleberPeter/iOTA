@@ -4,12 +4,9 @@ import datetime
 
 def parseFileExtension(file, desiredExtension):
     fileSplitted = file.split(".")
-    if len(fileSplitted) == 2 : # is name_file.extension ?
-        extension = fileSplitted[1]
-        if extension == desiredExtension:
-            return True
-        else:
-            return False
+    extension = fileSplitted[len(fileSplitted)-1]
+    if extension == desiredExtension:
+        return True
     else:
         return False
 
@@ -94,7 +91,10 @@ class _parser:
                     return False
                 
                 data = file.read()
-                self.arguments.filesNames.append(file_name)
+
+                file_name_splitted = file_name.split('/') # a/b/file.py
+                
+                self.arguments.filesNames.append(file_name_splitted[-1])
                 self.arguments.filesData.append(data)
                 self.arguments.filesSizes.append(len(data))
                 file.close()
