@@ -7,12 +7,21 @@ import os
 import sys
 import machine
 from suit import FotaSuit
+import tst_func as tst
+
+_companytec = True
+
+if _companytec:
+    HOST_BROKER = "192.168.0.139"
+    ID_WIFI = 'WIFI_P&D' 
+    PSWD_WIFI = 'prjtdsnvmnt,1421'
+else:
+    HOST_BROKER = "192.168.0.103"
+    ID_WIFI = 'House'
+    PSWD_WIFI = 'raquel999'
 
 DEBUG = True
-ID_WIFI = 'House'
-PSWD_WIFI = 'raquel999'
 TYPE_DELIVERY = 'Push'
-HOST_BROKER = "192.168.0.103"
 UUID_PROJECT = "1" # universal unique id from project (only used if not exists an local manifest).
 ID_DEVICE = "84" # id from device inside project.
 VERSION = 11 # current version of device (only used if not exists an local manifest).
@@ -33,6 +42,7 @@ def connect_wifi(_id, _pswd):
     if not sta_if.isconnected():
         print('connecting to network...')
         sta_if.active(True)
+
         sta_if.connect(_id, _pswd)
         while not sta_if.isconnected():
             pass
@@ -62,7 +72,9 @@ while True:
         print(error)
         sys.exit()
 
-    print('current version: ' + str(FOTA.manifest.version))
+    print('waiting for version: ' + str(FOTA.manifest.get_next_version()))
+
+    tst.updated_function(789)
 
     while True:
         # do someting ...

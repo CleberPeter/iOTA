@@ -38,8 +38,9 @@ class FotaSuit:
         self.mqtt_client.set_callback(self.publish_received)
 
         self.update_file_size = 0
+        self.update_file_index = 0
+        self.update_file_handle = 0
         self.memory = Memory(self.debug)
-        _current_partition = self.memory.get_current_partition_name()
         _next_partition = self.memory.get_next_partition_name()
 
         self.callback_on_receive_update = _callback_on_receive_update
@@ -51,10 +52,9 @@ class FotaSuit:
             self.print_debug("trying connection with broker...")
             time.sleep(3)
 
-        self.manifest = Manifest(_current_partition, _next_partition)
-
-        if self.manifest.load_and_update(_uuid_project, _version): 
-            
+        self.manifest = Manifest(_next_partition)
+        self.manifest.load(_uuid_project, _version)
+        """
             # notify the upgrade
             _version = str(self.manifest.version)
             _msg = '{"idDevice":"'+self.id_device+'", "uuidProject":"'+_uuid_project+'"'
@@ -62,8 +62,9 @@ class FotaSuit:
 
             #TODO: insert other informations in message like date
             self.publish_on_topic(_version, "updated", _msg)
-
-        self.subscribe_on_topic("manifest") # waiting for manifest file
+        """
+        
+        self.subscribe_task = "manifest" # waiting for manifest file
         _thread.start_new_thread(self.loop, ())
         self.print_debug("initialized.")
 
@@ -137,20 +138,42 @@ class FotaSuit:
 
             if self.manifest.save_new(msg_str):
                 self.print_debug('new version avaliable.')
-                _name_new_file = self.manifest.new_files[0]['name']
-                self.subscribe_on_topic(_name_new_file) # subscribe to receive update files
 
-        elif topic_type == self.manifest.new_files[0]['name']:
-
-            size_message = len(_message)
-            self.update_file_size += size_message
-            self.print_progress_download()
-            self.memory.write(_message)
-
-            if self.update_file_size == self.manifest.new_files[0]['size']:
-                self.memory.flush() # save remaining bytes
                 self.update_file_size = 0
-                self.callback_on_receive_update()
+                self.update_file_index = 0
+                _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
+
+                if self.manifest.new['type'] == 'py':
+                    self.update_file_handle = open("_" + _name_new_file, "a")
+
+                self.subscribe_task = _name_new_file # subscribe to receive update file
+
+        elif topic_type == self.manifest.new['files'][self.update_file_index]['name']:
+
+            self.update_file_size += len(_message)
+            self.print_progress_download()
+            
+            if self.manifest.new['type'] == 'bin':
+                self.memory.write(_message)
+            else:
+                self.update_file_handle.write(_message)
+
+            if self.update_file_size == self.manifest.new['files'][self.update_file_index]['size']:
+
+                self.update_file_index += 1 # another file received
+                self.update_file_size = 0
+
+                if self.manifest.new['type'] == 'bin':
+                    self.memory.flush() # save remaining bytes
+                else:
+                    self.update_file_handle.close() # close update file
+
+                if self.update_file_index == len(self.manifest.new['files']): # downloaded all files ?
+                    self.callback_on_receive_update()
+                else:
+                    _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
+                    self.update_file_handle = open("_" + _name_new_file, "a") # open another file
+                    self.subscribe_task = _name_new_file # subscribe to receive update file
 
         else:
             self.print_debug("topic not recognitzed: " + topic_type)
@@ -190,8 +213,9 @@ class FotaSuit:
             Returns:
                 void.
         """
-        progress = 100*self.update_file_size/self.manifest.new_files[0]['size']
-        self.print_debug("downloading update: "+str(progress)+"%")
+        _progress = str(100*self.update_file_size/self.manifest.new['files'][self.update_file_index]['size'])
+        _name_file = str(self.manifest.new['files'][self.update_file_index]['name'])
+        self.print_debug("downloading update file: '"+_name_file+"' - progress: "+_progress+"%")
 
     def loop(self):
         """
@@ -204,6 +228,11 @@ class FotaSuit:
         """
 
         while True:
+
+            if not self.subscribe_task == '':
+                self.subscribe_on_topic(self.subscribe_task)
+                self.subscribe_task = ''
+
             self.mqtt_client.wait_msg()
 
     def print_debug(self, _message):
