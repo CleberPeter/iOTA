@@ -55,6 +55,6 @@ if '_manifest.json' in files: # have an new manifest ? make upgrade
 else:
     print('manifest already up to date.')
 
-
-update_file = open('_updated.iota', 'x') # signal an update to occur 
-update_file.close()
+if _updated: # only notify if was updated
+    update_file = open('_updated.iota', 'x') # signal an update to occur 
+    update_file.close()
