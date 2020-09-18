@@ -7,7 +7,7 @@ import os
 import sys
 import machine
 from suit import FotaSuit
-import tst_func as tst
+from security import Security
 
 _companytec = True
 
@@ -74,7 +74,18 @@ while True:
 
     print('waiting for version: ' + str(FOTA.manifest.get_next_version()))
 
-    tst.updated_function(0)
+    _key = b"1234" * 8
+    _plain_text = bytes(range(32))
+    
+    print(_plain_text)
+    sec = Security(_key, DEBUG)
+    _ciphered = sec.aes_256_cbc_encrypt(_plain_text)
+    print(_ciphered)
+    _plain_text = sec.aes_256_cbc_decrypt(_ciphered)
+    print(_plain_text)
+
+    _hashed = sec.sha_256("aui")
+    print(_hashed)
 
     while True:
         # do someting ...
