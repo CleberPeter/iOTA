@@ -1,10 +1,15 @@
-"""from security import Security
+import sys
+from uecc import ecdsa
+from ucryptolib import aes
 
 _key = b"1234" * 8
 _plain_text = bytes(range(32))
+_aes = aes(_key, 2, b"OTA_EXEHDA_VRS10")
+print(_aes)
 
-print("plain_text: ", _plain_text)
-sec = Security(_key, True)
-_ciphered = sec.aes_256_cbc_encrypt(_plain_text)
-print("ciphered: ",_ciphered)
-"""
+try:
+    _ecdsa = ecdsa("key")
+    print(_ecdsa.verify("signed_text"))
+except Exception as error:
+    print(error)
+    sys.exit()
