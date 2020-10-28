@@ -3,7 +3,7 @@ from ecdsa import SigningKey, VerifyingKey, SECP256k1
 from ecdsa.util import sigencode_der, sigdecode_der
 import base64
 
-message = b"aui"
+message = b"aui_teste_123"
 
 privkey = "a039169eb60af31b3bf291fab39a15a2f1300663370ff8c6dcc5a8e2fe3c3690"
 # pubkey = "04164639549dc15abf38e6bfa2a4b3cab13cf2820bccdb76fe58507c746b48f174bb3e1c1e54a6865c00e8e90e3349549ddeef7139ef134e9fa30c37652e3951c1"

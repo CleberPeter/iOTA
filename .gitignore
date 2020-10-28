@@ -3,3 +3,4 @@ __pycache__/
 deploymentTools/qt/iotaDeploy//iotaDeploy.pro.user
 deploymentTools/qt/iotaDeploy/iotaDeploy.pro.user
 .vscode/
+tests/mbedtls_test.pro.user

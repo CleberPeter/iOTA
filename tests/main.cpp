@@ -38,6 +38,8 @@ int main(int argc, char *argv[])
     size_t pubkey_size = strlen(pubkey_str)/2;
     size_t signature_size = strlen(signature_str)/2;
 
+    printf("pubkey_size: %d \n", pubkey_size);
+
     unsigned char pubkey[pubkey_size];
     unsigned char signature[signature_size];
 
