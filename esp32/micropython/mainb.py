@@ -9,15 +9,15 @@ import machine
 from suit import FotaSuit
 from security import Security
 
-_companytec = True
+_companytec = False
 
 if _companytec:
     HOST_BROKER = "192.168.0.139"
     ID_WIFI = 'WIFI_P&D' 
     PSWD_WIFI = 'prjtdsnvmnt,1421'
 else:
-    HOST_BROKER = "192.168.0.103"
-    ID_WIFI = 'House'
+    HOST_BROKER = "192.168.0.102"
+    ID_WIFI = 'HOUSE'
     PSWD_WIFI = 'raquel999'
 
 DEBUG = True
@@ -73,19 +73,6 @@ while True:
         sys.exit()
 
     print('waiting for version: ' + str(FOTA.manifest.get_next_version()))
-
-    _key = b"1234" * 8
-    _plain_text = bytes(range(32))
-    
-    print(_plain_text)
-    sec = Security(_key, DEBUG)
-    _ciphered = sec.aes_256_cbc_encrypt(_plain_text)
-    print(_ciphered)
-    _plain_text = sec.aes_256_cbc_decrypt(_ciphered)
-    print(_plain_text)
-
-    _hashed = sec.sha_256("aui")
-    print(_hashed)
 
     while True:
         # do someting ...

@@ -103,15 +103,22 @@ class Manifest:
             Returns:
                 boolean indicating status of parsing.
         """
-
+        _sign = False
         try:
             _manifest_object = json.loads(_str)
+
+            if "signature" in _manifest_object: # secure version
+                _sign = _manifest_object['signature']
+                print("signature: ", _sign)
+
+                print(_str)
+
         except ValueError:
             self.print_debug("error. invalid manifest file.")
             return False
 
         # is for this device and is the desired version ?
-        if _manifest_object['uuidProject'] == self.uuid_project and \
+        """if _manifest_object['uuidProject'] == self.uuid_project and \
            _manifest_object['version'] == self.get_next_version():
 
             # TODO: check others informations like dateExpiration
@@ -125,7 +132,7 @@ class Manifest:
                 
             elif _manifest_object['type'] == "py":
                 return self.save(_manifest_object)
-
+        """
         return False
 
     def fill(self, _manifest_str):

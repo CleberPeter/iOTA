@@ -1,7 +1,6 @@
 import hashlib
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 from ecdsa.util import sigencode_der, sigdecode_der
-import base64
 
 message = b"aui_teste_123"
 

@@ -29,7 +29,9 @@ class _parser:
         parser.add_argument('-dateExpiration', action = 'store',  dest = 'dateExpiration', required = True, 
                              help = 'date expiration')
         parser.add_argument('-debug', action = 'store',  dest = 'debug', required = False, 
-                             help = 'port broker', default = "False")
+                             help = 'debug', default = "False")
+        parser.add_argument('-privateKey', action = 'store',  dest = 'privateKey', required = False, 
+                             help = 'private key from project', default = False)
         self.arguments = parser.parse_args()
         
         if not self.doParse():
@@ -130,6 +132,15 @@ class _parser:
             return False
 
         self.printDebug("dateExpiration: " + str(self.arguments.dateExpiration))
+        
+        if not self.arguments.privateKey == False:
 
+            if len(self.arguments.privateKey) == 64: # SECP256k1 key size
+                self.printDebug("privateKey: " + str(self.arguments.privateKey))
+                self.arguments.privateKey = bytes.fromhex(self.arguments.privateKey)
+            else:
+                print("invalid private key size.")
+                return False
+                
         return True        
         
