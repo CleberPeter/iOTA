@@ -7,6 +7,7 @@ import _thread
 from umqttIota.robust import MQTTClient
 from memory_esp32 import Memory
 from manifest import Manifest
+from security import Security 
 
 class FotaSuit:
     """
@@ -20,6 +21,7 @@ class FotaSuit:
                             (only used if not exists an local manifest).
             _host_broker (string): address from broker.
             _callback_on_receive_update (function): called when upgrade file received.
+            _pubkey (string): public key from server.
             _delivery_type (string, optional): update search strategy pass: 'Pull' or 'Push'.
                                                 Default is 'Push'.
             _debug (boolean, optional): enable debug from class. Default is True.
@@ -27,11 +29,12 @@ class FotaSuit:
             object from class
     """
     def __init__(self, _uuid_project, _id_device, _version, _host_broker, \
-                    _callback_on_receive_update, _delivery_type='Push', _debug=True):
+                    _callback_on_receive_update, _pubkey=None, _delivery_type='Push', _debug=True):
         self.host_broker = _host_broker
         self.debug = _debug
         self.delivery_type = _delivery_type
         self.id_device = _id_device
+        self.security = Security(_pubkey)
 
         _id_on_broker = "FotaSuit-" + _uuid_project + "-" + self.id_device
         self.mqtt_client = MQTTClient(_id_on_broker, self.host_broker)
@@ -53,7 +56,7 @@ class FotaSuit:
             self.print_debug("trying connection with broker...")
             time.sleep(3)
 
-        self.manifest = Manifest(_next_partition)
+        self.manifest = Manifest(_next_partition, _pubkey)
         self.manifest.load(_uuid_project, _version)
 
         files = os.listdir()
@@ -122,6 +125,34 @@ class FotaSuit:
         self.mqtt_client.publish(_topic.encode(), _msg.encode(), True) # retain this message!
         self.print_debug("published on topic: " + _topic + " msg:" + _msg)
 
+    def verify_file(self):
+
+        """
+            verifies the signature from upgrade file
+
+            Args:
+                void.
+            Returns:
+                boolean indicating the success of the signature verification.
+        """
+
+        _file_data = self.security.sha256_ret()
+
+        if 'sign' in self.manifest.new['files'][self.update_file_index]: # file secured ?
+
+            _sign_str = self.manifest.new['files'][self.update_file_index]['sign']
+            
+            try: 
+                if self.security.ecdsa_secp256k1_verifiy_sign(_file_data, _sign_str):
+                    return True
+            except Exception as error:
+                print(error)
+
+            return False
+
+        else:
+            return True
+        
     def publish_received(self, _topic, _message):
         """
             publish received on iota topic: iota/<uuid>/<version>/_topic
@@ -134,14 +165,15 @@ class FotaSuit:
         """
 
         topic_str = _topic.decode("utf-8")
-        topic_type = self.parse_topic(topic_str)
+        _topic_name = self.parse_topic(topic_str)
 
-        if topic_type == 'manifest':
+        if _topic_name == 'manifest':
             self.print_debug("topic received: " + topic_str)
-            msg_str = _message.decode("utf-8")
-            self.print_debug("msg received: " + msg_str)
+            _msg_str = _message.decode("utf-8")
 
-            if self.manifest.save_new(msg_str):
+            self.print_debug("msg received: " + _msg_str)
+
+            if self.manifest.save_new(_msg_str):
                 self.print_debug('new version avaliable.')
 
                 self.update_file_size = 0
@@ -152,33 +184,57 @@ class FotaSuit:
                     self.update_file_handle = open("_" + _name_new_file, "a")
 
                 self.subscribe_task = _name_new_file # subscribe to receive update file
-
-        elif topic_type == self.manifest.new['files'][self.update_file_index]['name']:
+            
+    
+        elif _topic_name == self.manifest.new['files'][self.update_file_index]['name']:
 
             self.update_file_size += len(_message)
             self.print_progress_download()
+
+            self.security.sha256_update(_message)
             
             if self.manifest.new['type'] == 'bin':
                 self.memory.write(_message)
             else:
                 self.update_file_handle.write(_message)
-
-            if self.update_file_size == self.manifest.new['files'][self.update_file_index]['size']:
-
-                self.update_file_index += 1 # another file received
-                self.update_file_size = 0
-
+                
+            if self.update_file_size == self.manifest.new['files'][self.update_file_index]['size']: # finish download file
+                
                 if self.manifest.new['type'] == 'bin':
                     self.memory.flush() # save remaining bytes
                 else:
                     self.update_file_handle.close() # close update file
 
-                if self.update_file_index == len(self.manifest.new['files']): # downloaded all files ?
-                    self.callback_on_receive_update()
+                if self.verify_file():
+
+                    self.print_debug("signature verification successfully.")
+
+                    self.update_file_index += 1 # another file received
+                    self.update_file_size = 0
+
+                    if self.update_file_index == len(self.manifest.new['files']): # downloaded all files ?
+                        self.callback_on_receive_update()
+                    else:
+                        _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
+                        self.update_file_handle = open("_" + _name_new_file, "a") # open another file
+                        self.subscribe_task = _name_new_file # subscribe to receive update file
+
                 else:
-                    _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
-                    self.update_file_handle = open("_" + _name_new_file, "a") # open another file
-                    self.subscribe_task = _name_new_file # subscribe to receive update file
+                    self.update_file_index = 0
+                    self.update_file_size  = 0
+
+                    files = os.listdir()
+
+                    ## HARD CLEAN SESSION ##
+                    self.mqtt_client.reconnect()
+                    self.subscribe_task = "manifest" # turn to waiting for manifest file
+                    ########################
+
+                    for file in files: # removes garbage
+                        if file[0] == '_': # is an update file (_xxx)
+                            os.remove(file) 
+
+                    self.print_debug("signature verify failed.")
 
         else:
             self.print_debug("topic not recognitzed: " + topic_type)

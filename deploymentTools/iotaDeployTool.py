@@ -57,8 +57,6 @@ class iotaDeployTool:
         
         else:
           manifestJson = base64.b64encode(manifestJson).decode("utf-8")
-
-        print(manifestJson)
         
       except Exception as e:
         print("can't create manifest JSON. Error:")

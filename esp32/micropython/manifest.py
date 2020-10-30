@@ -3,6 +3,8 @@ Implementation of manifest function from IOTA framework.
 """
 import os
 import json
+import ubinascii
+from security import Security 
 
 class Manifest:
     """
@@ -11,14 +13,16 @@ class Manifest:
         Args:
             _next_partition_name (string): attached to the manifest to determine which
                                            partition should be booted after the upgrade
+            _pubkey (string): public key from server.
             _debug (boolean, optional): enable debug from class. Default is True.
         Returns:
             object from class.
     """
-    def __init__(self, _next_partition_name, _debug=True):
+    def __init__(self, _next_partition_name, _pubkey=None, _debug=True):
 
         self.debug = _debug
         self.next_partition_name = _next_partition_name
+        self.security = Security(_pubkey)
         self.uuid_project = ''
         self.version = 0
         self.date_expiration = ''
@@ -84,41 +88,64 @@ class Manifest:
 
     def save_new(self, _str):
         """
-            set new manifest file:
-                {
-                    "uuidProject": "1",
-                    "version": 14,
-                    "type": "bin",
-                    "dateExpiration": "2020-06-05",
-                    "files": [
-                        {
-                        "name": "firmware",
-                        "size": 1376016
-                        }
-                    ]
-                }
+            set new manifest file.
 
             Args:
-                _str (string): manifest file in string format.
+                _str (string): manifest in JWS format "data_in_b64.signature_in_b64".
             Returns:
                 boolean indicating status of parsing.
         """
-        _sign = False
+
+        _splitted = _str.split('.') 
+
+        _data_b64 = _splitted[0]
+        _data_bytes = ubinascii.a2b_base64(_data_b64)
+        _data_str = _data_bytes.decode('utf-8')
+
+        self.print_debug('message: ' + _data_str)
+
+        if len(_splitted) > 1: # was signed ?
+
+            _sign_b64 = _splitted[1]
+            _sign_json_str = ubinascii.a2b_base64(_sign_b64).decode('utf-8')
+
+            self.print_debug('signature_json: ' + _sign_json_str)
+
+            try:
+                _sign_object = json.loads(_sign_json_str)
+
+                if "sign" in _sign_object:
+                    _sign_str = _sign_object['sign']
+                    self.print_debug("signature: " + _sign_str)
+
+                    self.security.sha256_update(_data_bytes)
+                    _hash = self.security.sha256_ret()
+                    
+                    if not self.security.ecdsa_secp256k1_verifiy_sign(_hash, _sign_str):
+                        self.print_debug("signature verify failed.")
+                        return False
+                    else:
+                        self.print_debug("signature verification successfully.")
+
+                else:
+                    self.print_debug("error. sign object.")
+                    return False
+
+            except Exception as err:
+                print(err)
+                self.print_debug("error. signature verify.")
+                return False
+        
+        
         try:
-            _manifest_object = json.loads(_str)
-
-            if "signature" in _manifest_object: # secure version
-                _sign = _manifest_object['signature']
-                print("signature: ", _sign)
-
-                print(_str)
+            _manifest_object = json.loads(_data_str)
 
         except ValueError:
             self.print_debug("error. invalid manifest file.")
             return False
-
+        
         # is for this device and is the desired version ?
-        """if _manifest_object['uuidProject'] == self.uuid_project and \
+        if _manifest_object['uuidProject'] == self.uuid_project and \
            _manifest_object['version'] == self.get_next_version():
 
             # TODO: check others informations like dateExpiration
@@ -132,7 +159,7 @@ class Manifest:
                 
             elif _manifest_object['type'] == "py":
                 return self.save(_manifest_object)
-        """
+        
         return False
 
     def fill(self, _manifest_str):

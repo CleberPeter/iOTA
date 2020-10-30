@@ -1,4 +1,5 @@
 import hashlib
+import math
 from ecdsa import SigningKey, SECP256k1
 from ecdsa.util import sigencode_der
 
@@ -12,14 +13,16 @@ class _manifest:
         self.files = []
         for index in range(0, len(_filesNames)):
             
-            if not type == 'bin' and _privateKey:
-                _sign = self.sign(_filesData[index], _privateKey)
+            if _privateKey:
+                _sign = self.sign(_filesData[index], bytes.fromhex("8964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a")) # bytes.fromhex("8964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a") _privateKey
                 self.files.append({'name': _filesNames[index], 'size': _filesSizes[index], 'sign': _sign})
             else:
                 self.files.append({'name': _filesNames[index], 'size': _filesSizes[index]})
-                
+    
     def sign(self, _msg_bytes, _privateKey):
-
+                
         sk = SigningKey.from_string(_privateKey, curve=SECP256k1, hashfunc=hashlib.sha256)
+
         signature = sk.sign(_msg_bytes,sigencode=sigencode_der)
         return signature.hex()
+        

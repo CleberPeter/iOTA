@@ -121,6 +121,9 @@ class Memory:
         self.write_on_memory()
         self.partition.set_boot()
 
+        self.update_file_pages_counter = 0
+        self.update_file_page_data = bytearray()
+    
     def plot_debug(self, _message):
         """
             print debug messages.

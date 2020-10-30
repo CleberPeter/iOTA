@@ -1,3 +1,10 @@
+import hashlib
+
+sha256 = hashlib.sha256()
+
+m.update(b"Nobody inspects")
+
+"""
 import sys
 from uecc import ecdsa
 from ucryptolib import aes
@@ -25,3 +32,4 @@ try:
 except Exception as error:
     print(error)
     sys.exit()
+"""
