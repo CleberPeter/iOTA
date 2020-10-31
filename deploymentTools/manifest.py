@@ -14,7 +14,9 @@ class _manifest:
         for index in range(0, len(_filesNames)):
             
             if _privateKey:
-                _sign = self.sign(_filesData[index], bytes.fromhex("8964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a")) # bytes.fromhex("8964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a") _privateKey
+                # _prk = bytes.fromhex("8964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a") 
+                _prk = _privateKey 
+                _sign = self.sign(_filesData[index], _prk)
                 self.files.append({'name': _filesNames[index], 'size': _filesSizes[index], 'sign': _sign})
             else:
                 self.files.append({'name': _filesNames[index], 'size': _filesSizes[index]})

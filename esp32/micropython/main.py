@@ -8,7 +8,7 @@ import sys
 import machine
 from suit import FotaSuit
 
-_companytec = True
+_companytec = False
 
 if _companytec:
     HOST_BROKER = "192.168.0.139"

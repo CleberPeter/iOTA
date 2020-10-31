@@ -94,6 +94,24 @@ class FotaSuit:
             self.print_debug("fail to connect with broker.")
             return False
 
+    def get_name_topic(self, _topic):
+        return 
+
+    def unsubscribe_from_topic(self, _topic):
+        """
+            unsubscribe from iota topic: iota/<uuidProject>/<version>/_topic
+
+            Args:
+                _topic (string): topic name to unsubscribe.
+            Returns:
+                void.
+        """
+        _next_version = str(self.manifest.get_next_version())
+        _topic = "iota/"+self.manifest.uuid_project+"/"+_next_version+"/"+_topic
+
+        self.mqtt_client.unsubscribe(_topic.encode())
+        self.print_debug("unsubscribed on topic: " + _topic)
+
     def subscribe_on_topic(self, _topic):
         """
             subscribe on iota topic: iota/<uuidProject>/<version>/_topic
@@ -184,8 +202,7 @@ class FotaSuit:
                     self.update_file_handle = open("_" + _name_new_file, "a")
 
                 self.subscribe_task = _name_new_file # subscribe to receive update file
-            
-    
+                
         elif _topic_name == self.manifest.new['files'][self.update_file_index]['name']:
 
             self.update_file_size += len(_message)
@@ -220,24 +237,23 @@ class FotaSuit:
                         self.subscribe_task = _name_new_file # subscribe to receive update file
 
                 else:
+                    
+                    self.print_debug("signature verify failed.")
+                    
                     self.update_file_index = 0
                     self.update_file_size  = 0
 
                     files = os.listdir()
 
-                    ## HARD CLEAN SESSION ##
-                    self.mqtt_client.reconnect()
-                    self.subscribe_task = "manifest" # turn to waiting for manifest file
-                    ########################
+                    for _file in self.manifest.new['files']:
+                        self.unsubscribe_from_topic(_file['name'])
 
                     for file in files: # removes garbage
                         if file[0] == '_': # is an update file (_xxx)
                             os.remove(file) 
 
-                    self.print_debug("signature verify failed.")
-
         else:
-            self.print_debug("topic not recognitzed: " + topic_type)
+            self.print_debug("topic not recognitzed: " + _topic_name)
 
     def parse_topic(self, _topic_str):
         """
