@@ -5,6 +5,7 @@ import time
 import paho.mqtt.client as _mqtt
 from parser import _parser
 from manifest import _manifest
+import base64
 
 class iotaDeployTool:
     def __init__(self, qos = 2):
@@ -39,11 +40,24 @@ class iotaDeployTool:
       
       topicManifest = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/manifest"
       
-      manifestClass = _manifest(self.args.uuidProject, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes)
+      manifestClass = _manifest(self.args.uuidProject, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes, self.args.filesData, self.args.privateKey)
       manifestObject = manifestClass.__dict__
 
       try:
-        manifestJson = json.dumps(manifestObject)
+
+        manifestJson = json.dumps(manifestObject).encode("utf-8")
+        
+        if self.args.privateKey:
+          signObject = {
+            "sign": manifestClass.sign(manifestJson, self.args.privateKey)
+          }
+
+          signJson = json.dumps(signObject).encode()
+          manifestJson = base64.b64encode(manifestJson).decode("utf-8") + "." + base64.b64encode(signJson).decode("utf-8")
+        
+        else:
+          manifestJson = base64.b64encode(manifestJson).decode("utf-8")
+        
       except Exception as e:
         print("can't create manifest JSON. Error:")
         print(e)

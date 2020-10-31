@@ -7,17 +7,16 @@ import os
 import sys
 import machine
 from suit import FotaSuit
-import tst_func as tst
 
-_companytec = True
+_companytec = False
 
 if _companytec:
     HOST_BROKER = "192.168.0.139"
     ID_WIFI = 'WIFI_P&D' 
     PSWD_WIFI = 'prjtdsnvmnt,1421'
 else:
-    HOST_BROKER = "192.168.0.103"
-    ID_WIFI = 'House'
+    HOST_BROKER = "192.168.0.102"
+    ID_WIFI = 'HOUSE'
     PSWD_WIFI = 'raquel999'
 
 DEBUG = True
@@ -25,6 +24,9 @@ TYPE_DELIVERY = 'Push'
 UUID_PROJECT = "1" # universal unique id from project (only used if not exists an local manifest).
 ID_DEVICE = "84" # id from device inside project.
 VERSION = 11 # current version of device (only used if not exists an local manifest).
+
+# public key from server to verify signatures.
+PUB_KEY_SRV = "04a15091093d0b516c88c3d0e46dbc0dc3b551da5ff823682559b27e68542c19e611229a22e549bcf45119985e102c6c0077c9c65b17e54648577de72720aa826b" 
 
 sta_if = network.WLAN(network.STA_IF)
 
@@ -67,14 +69,12 @@ while True:
     connect_wifi(ID_WIFI, PSWD_WIFI)
 
     try:
-        FOTA = FotaSuit(UUID_PROJECT, ID_DEVICE, VERSION, HOST_BROKER, on_receive_update, TYPE_DELIVERY, DEBUG)
+        FOTA = FotaSuit(UUID_PROJECT, ID_DEVICE, VERSION, HOST_BROKER, on_receive_update, PUB_KEY_SRV, TYPE_DELIVERY, DEBUG)
     except Exception as error:
         print(error)
         sys.exit()
 
     print('waiting for version: ' + str(FOTA.manifest.get_next_version()))
-
-    tst.updated_function(0)
 
     while True:
         # do someting ...
