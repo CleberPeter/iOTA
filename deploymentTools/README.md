@@ -1,13 +1,13 @@
 ## Usage Example
 
 ### Monolithic
-python3 iotaDeployTool.py -uuid 1 -files application_ota.bin -type bin -version 12 -dateExpiration 2020-06-05 -debug true
+python3 iotaDeployTool.py -uuid 1 -files application_ota.bin -type bin -version 86 -dateExpiration 2020-06-05 -debug true
 
 #### With Authentication
-python3 iotaDeployTool.py -uuid 1 -files application_ota.bin -type bin -version 12 -dateExpiration 2020-06-05 -debug true -privateKey 7964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a
+python3 iotaDeployTool.py -uuid 1 -files application_ota.bin -type bin -version 86 -dateExpiration 2020-06-05 -debug true -authorPrivateKey debf91efe6a36c27e27af9a5ef35c5d14c918d1201e2067d2fe7f9051e1c50ed -projectPublicKey 3082010a0282010100ad2b6a5c2af34609096ef38df1162f5515ca799b2f7fcd05aec348f697bf44fe3798df8d1558b0a26ea00c4f0eb52e7137ac5094092852b5a8eb0f5c3f59f5d43bcb591f2a13a0cbc67fd0c48e064a058772f28bf06098040557814d2706c7328f8187cc7fb059d885edf3a684e2ed21f2c1f15e83fff8758ed2881733b8ab09fc60191cc9ec443bfd0cd29ecfdc8c030925029ee55e9b313bcd5688b862a25b9332323bc4ff65ecc1924bc59fd4980e07830572bc8b6e0101c2961b75b0107db80c46dcb8ea53183fd29950555f9064e10e6b186a2beb014fba6a94f8f35fa605abed32ad75ebab46d1fe1883bcfc2ae1e9c909e7dc54e411d2dc76a9ae3a9d0203010001
 
 ### Diferential
-python3 iotaDeployTool.py -uuid 1 -files ../esp32/micropython/suit.py,../esp32/micropython/main.py -type py -version 78 -dateExpiration 2020-06-05 -debug true
+python3 iotaDeployTool.py -uuid 1 -files ../esp32/micropython/suit.py,../esp32/micropython/main.py -type py -version 86 -dateExpiration 2020-06-05 -debug true
 
 #### With Authentication
-python3 iotaDeployTool.py -uuid 1 -files ../esp32/micropython/suit.py,../esp32/micropython/main.py -type py -version 78 -dateExpiration 2020-06-05 -debug true -privateKey 7964370f8571a7a63b519b4067e3e364100804a0f0b285e1292bf6d8636b168a
+python3 iotaDeployTool.py -uuid 1 -files ../esp32/micropython/suit.py,../esp32/micropython/main.py -type py -version 86 -dateExpiration 2020-06-05 -debug true -authorPrivateKey debf91efe6a36c27e27af9a5ef35c5d14c918d1201e2067d2fe7f9051e1c50ed -projectPublicKey 3082010a0282010100ad2b6a5c2af34609096ef38df1162f5515ca799b2f7fcd05aec348f697bf44fe3798df8d1558b0a26ea00c4f0eb52e7137ac5094092852b5a8eb0f5c3f59f5d43bcb591f2a13a0cbc67fd0c48e064a058772f28bf06098040557814d2706c7328f8187cc7fb059d885edf3a684e2ed21f2c1f15e83fff8758ed2881733b8ab09fc60191cc9ec443bfd0cd29ecfdc8c030925029ee55e9b313bcd5688b862a25b9332323bc4ff65ecc1924bc59fd4980e07830572bc8b6e0101c2961b75b0107db80c46dcb8ea53183fd29950555f9064e10e6b186a2beb014fba6a94f8f35fa605abed32ad75ebab46d1fe1883bcfc2ae1e9c909e7dc54e411d2dc76a9ae3a9d0203010001

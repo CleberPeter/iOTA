@@ -18,11 +18,12 @@ class Manifest:
         Returns:
             object from class.
     """
-    def __init__(self, _next_partition_name, _pubkey=None, _debug=True):
+    def __init__(self, _next_partition_name, _public_key=None, _debug=True):
 
         self.debug = _debug
         self.next_partition_name = _next_partition_name
-        self.security = Security(_pubkey)
+        self.public_key = _public_key
+        self.security = Security()
         self.uuid_project = ''
         self.version = 0
         self.date_expiration = ''
@@ -74,13 +75,18 @@ class Manifest:
         except ValueError:
             self.print_debug("error. invalid manifest file.")
             return False
-
+        
         _manifest_file = open('_manifest.json', 'x')
         _manifest_file.write(_new_manifest_str)
         _manifest_file.close()
-
+        
         #TODO: check this question!
         # self.load(_new_manifest_str) # for now, only reloads manifest in RAM after reboot.
+
+        self.new = dict() # clean
+
+        if 'key' in _new_manifest_object: # secure version?
+            self.new['key'] = _new_manifest_object['key']
 
         self.new['type'] = _new_manifest_object['type']
         self.new['files'] = _new_manifest_object['files'].copy() # update files is stored here!
@@ -116,12 +122,11 @@ class Manifest:
 
                 if "sign" in _sign_object:
                     _sign_str = _sign_object['sign']
-                    self.print_debug("signature: " + _sign_str)
 
                     self.security.sha256_update(_data_bytes)
                     _hash = self.security.sha256_ret()
-                    
-                    if not self.security.ecdsa_secp256k1_verifiy_sign(_hash, _sign_str):
+
+                    if not self.security.ecdsa_secp256k1_verifiy_sign(self.public_key, _hash, _sign_str):
                         self.print_debug("signature verify failed.")
                         return False
                     else:

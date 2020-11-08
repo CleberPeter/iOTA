@@ -30,8 +30,10 @@ class _parser:
                              help = 'date expiration')
         parser.add_argument('-debug', action = 'store',  dest = 'debug', required = False, 
                              help = 'debug', default = "False")
-        parser.add_argument('-privateKey', action = 'store',  dest = 'privateKey', required = False, 
-                             help = 'private key from project', default = False)
+        parser.add_argument('-authorPrivateKey', action = 'store',  dest = 'authorPrivateKey', required = False, 
+                             help = 'ECDSA-256b private key from author', default = False)
+        parser.add_argument('-projectPublicKey', action = 'store',  dest = 'projectPublicKey', required = False, 
+                             help = 'RSA-2048b public key from project', default = False)
         self.arguments = parser.parse_args()
         
         if not self.doParse():
@@ -133,14 +135,26 @@ class _parser:
 
         self.printDebug("dateExpiration: " + str(self.arguments.dateExpiration))
         
-        if not self.arguments.privateKey == False:
+        if not self.arguments.authorPrivateKey == False:
 
-            if len(self.arguments.privateKey) == 64: # SECP256k1 key size
-                self.printDebug("privateKey: " + str(self.arguments.privateKey))
-                self.arguments.privateKey = bytes.fromhex(self.arguments.privateKey)
+            if len(self.arguments.authorPrivateKey) == 64: # ECDSA SECP256k1 private key size
+                self.printDebug("authorPrivateKey: " + str(self.arguments.authorPrivateKey))
+                self.arguments.authorPrivateKey = bytes.fromhex(self.arguments.authorPrivateKey)
+
+                if not self.arguments.projectPublicKey == False:
+                    if len(self.arguments.projectPublicKey) == 540: # RSA-2048 public key size
+                        self.printDebug("projectPublicKey: " + str(self.arguments.projectPublicKey))
+                        self.arguments.projectPublicKey = bytes.fromhex(self.arguments.projectPublicKey)
+                    else:
+                        print("invalid RSA project public key size.")
+                        return False
+                else:
+                    print("missing RSA project public key.")
+                    return False
+
             else:
-                print("invalid private key size.")
+                print("invalid ECDSA author private key size.")
                 return False
-                
+
         return True        
         

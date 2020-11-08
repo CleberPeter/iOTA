@@ -3,11 +3,15 @@ Implementation of OTA with MQTT Broker according to the SUIT specification for I
 """
 import os
 import time
-import _thread
 from umqttIota.robust import MQTTClient
 from memory_esp32 import Memory
 from manifest import Manifest
-from security import Security 
+from security import Security
+
+def unpad(s):
+    while(s[-1] == 0):
+        s = s[0:len(s)-1]
+    return s
 
 class FotaSuit:
     """
@@ -29,12 +33,17 @@ class FotaSuit:
             object from class
     """
     def __init__(self, _uuid_project, _id_device, _version, _host_broker, \
-                    _callback_on_receive_update, _pubkey=None, _delivery_type='Push', _debug=True):
+                    _callback_on_receive_update, _private_key=None, _public_key=None, _delivery_type='Push', _debug=True):
         self.host_broker = _host_broker
         self.debug = _debug
         self.delivery_type = _delivery_type
         self.id_device = _id_device
-        self.security = Security(_pubkey)
+        self.private_key = _private_key
+        self.public_key = _public_key
+        self.security = Security()
+        self.message_incoming = bytes()
+        self.do_decrypt = False
+        self.aes_random_key = ''
 
         _id_on_broker = "FotaSuit-" + _uuid_project + "-" + self.id_device
         self.mqtt_client = MQTTClient(_id_on_broker, self.host_broker)
@@ -56,7 +65,7 @@ class FotaSuit:
             self.print_debug("trying connection with broker...")
             time.sleep(3)
 
-        self.manifest = Manifest(_next_partition, _pubkey)
+        self.manifest = Manifest(_next_partition, _public_key)
         self.manifest.load(_uuid_project, _version)
 
         files = os.listdir()
@@ -71,10 +80,11 @@ class FotaSuit:
             self.publish_on_topic(_version, "updated", _msg)
             os.remove('_updated.iota')
             
-        
         self.subscribe_task = "manifest" # waiting for manifest file
-        _thread.start_new_thread(self.loop, ())
         self.print_debug("initialized.")
+
+        # _thread.start_new_thread(self.loop, ())
+        
 
     def connect_on_broker(self, _clean_session):
         """
@@ -156,12 +166,12 @@ class FotaSuit:
 
         _file_data = self.security.sha256_ret()
 
-        if 'sign' in self.manifest.new['files'][self.update_file_index]: # file secured ?
+        if self.upgrade_is_secure():
 
             _sign_str = self.manifest.new['files'][self.update_file_index]['sign']
             
             try: 
-                if self.security.ecdsa_secp256k1_verifiy_sign(_file_data, _sign_str):
+                if self.security.ecdsa_secp256k1_verifiy_sign(self.public_key, _file_data, _sign_str):
                     return True
             except Exception as error:
                 print(error)
@@ -170,43 +180,68 @@ class FotaSuit:
 
         else:
             return True
-        
-    def publish_received(self, _topic, _message):
+    
+    def upgrade_is_secure(self):
+        return 'key' in self.manifest.new
+
+    def publish_received(self, _topic, _message, _size_msg):
         """
             publish received on iota topic: iota/<uuid>/<version>/_topic
 
             Args:
                 _topic (bytes): topic name from received message.
                 _message (bytes): message received.
+                _size_msg (int): total message size
             Returns:
                 void.
         """
-
-        topic_str = _topic.decode("utf-8")
-        _topic_name = self.parse_topic(topic_str)
-
+        _topic_str = _topic.decode("utf-8")
+        _topic_name = self.parse_topic(_topic_str)
+        
         if _topic_name == 'manifest':
-            self.print_debug("topic received: " + topic_str)
-            _msg_str = _message.decode("utf-8")
-
-            self.print_debug("msg received: " + _msg_str)
-
-            if self.manifest.save_new(_msg_str):
-                self.print_debug('new version avaliable.')
-
-                self.update_file_size = 0
-                self.update_file_index = 0
-                _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
-
-                if self.manifest.new['type'] == 'py':
-                    self.update_file_handle = open("_" + _name_new_file, "a")
-
-                self.subscribe_task = _name_new_file # subscribe to receive update file
+            
+            self.message_incoming += _message
+            
+            if len(self.message_incoming) == _size_msg:
                 
+                _msg_str = self.message_incoming.decode("utf-8")
+                self.print_debug("topic received: " + _topic_str)
+                self.print_debug("msg received: " + _msg_str)
+
+                if self.manifest.save_new(_msg_str):
+                    self.print_debug('new version avaliable.')
+    
+                    self.update_file_size = 0
+                    self.update_file_index = 0
+                    _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
+
+                    if self.manifest.new['type'] == 'py':
+                        self.update_file_handle = open("_" + _name_new_file, "a")
+
+                    if self.upgrade_is_secure():
+                        self.do_decrypt = True # starts decryption only when this callback is closed
+                        
+                    self.subscribe_task = _name_new_file # subscribe to receive update file
+
+                self.message_incoming = bytes()
+             
         elif _topic_name == self.manifest.new['files'][self.update_file_index]['name']:
 
             self.update_file_size += len(_message)
             self.print_progress_download()
+
+            if self.upgrade_is_secure():
+
+                self.message_incoming += _message
+                
+                _chunks = int(len(self.message_incoming)/16)
+                _message = self.message_incoming[0:_chunks*16]
+                
+                self.message_incoming = self.message_incoming[_chunks*16:]
+                _message = self.security.aes_256_cbc_decrypt(_message)
+
+                if self.update_file_size == self.manifest.new['files'][self.update_file_index]['size']: # finish download file
+                    _message = unpad(_message)
 
             self.security.sha256_update(_message)
             
@@ -214,7 +249,7 @@ class FotaSuit:
                 self.memory.write(_message)
             else:
                 self.update_file_handle.write(_message)
-                
+            
             if self.update_file_size == self.manifest.new['files'][self.update_file_index]['size']: # finish download file
                 
                 if self.manifest.new['type'] == 'bin':
@@ -224,17 +259,25 @@ class FotaSuit:
 
                 if self.verify_file():
 
-                    self.print_debug("signature verification successfully.")
+                    if self.upgrade_is_secure():
+                        self.print_debug("signature verification successfully.")
 
                     self.update_file_index += 1 # another file received
                     self.update_file_size = 0
 
                     if self.update_file_index == len(self.manifest.new['files']): # downloaded all files ?
+                        
+                        for _file in self.manifest.new['files']:
+                            self.unsubscribe_from_topic(_file['name'])
+                        
                         self.callback_on_receive_update()
                     else:
                         _name_new_file = self.manifest.new['files'][self.update_file_index]['name']
                         self.update_file_handle = open("_" + _name_new_file, "a") # open another file
                         self.subscribe_task = _name_new_file # subscribe to receive update file
+                        
+                        if self.upgrade_is_secure():
+                            self.security.aes_256_cbc_init(self.aes_random_key)
 
                 else:
                     
@@ -242,6 +285,7 @@ class FotaSuit:
                     
                     self.update_file_index = 0
                     self.update_file_size  = 0
+                    self.message_incoming = bytes()
 
                     files = os.listdir()
 
@@ -250,11 +294,14 @@ class FotaSuit:
 
                     for file in files: # removes garbage
                         if file[0] == '_': # is an update file (_xxx)
-                            os.remove(file) 
+                            os.remove(file)
 
+                self.message_incoming = bytes()
+            
         else:
             self.print_debug("topic not recognitzed: " + _topic_name)
-
+            self.message_incoming = bytes()
+        
     def parse_topic(self, _topic_str):
         """
             parse iota topic: iota/<uuid>/<version>/<type>.
@@ -304,13 +351,24 @@ class FotaSuit:
                 never returns.
         """
 
-        while True:
+        if self.do_decrypt == True: # decryption have priority
 
-            if not self.subscribe_task == '':
-                self.subscribe_on_topic(self.subscribe_task)
-                self.subscribe_task = ''
+            self.do_decrypt = False
+            try:
+                self.aes_random_key = self.security.rsa_decrypt(self.private_key, self.manifest.new['key'])
+            except Exception:
+                self.print_debug('decryption AES key failed.')
+                self.subscribe_task = '' # cancel upgrade
+                return
+            
+            print('aes secret random key: ', self.aes_random_key)
+            self.security.aes_256_cbc_init(self.aes_random_key)
+                
+        if not self.subscribe_task == '':
+            self.subscribe_on_topic(self.subscribe_task)
+            self.subscribe_task = ''
 
-            self.mqtt_client.wait_msg()
+        self.mqtt_client.wait_msg()
 
     def print_debug(self, _message):
         """

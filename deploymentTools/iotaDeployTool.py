@@ -6,6 +6,13 @@ import paho.mqtt.client as _mqtt
 from parser import _parser
 from manifest import _manifest
 import base64
+import random
+import string
+
+def get_random_string(length):
+    letters = string.ascii_uppercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str
 
 class iotaDeployTool:
     def __init__(self, qos = 2):
@@ -40,16 +47,21 @@ class iotaDeployTool:
       
       topicManifest = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/manifest"
       
-      manifestClass = _manifest(self.args.uuidProject, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes, self.args.filesData, self.args.privateKey)
+      _aes256_secret_random_key = None
+      if self.args.authorPrivateKey:
+        _aes256_secret_random_key = get_random_string(32).encode('utf8') # 32B -> aes256
+        print('secret random key: ', _aes256_secret_random_key.decode('utf-8'))
+      
+      manifestClass = _manifest(self.args.uuidProject, self.args.version, self.args.type, self.args.dateExpiration, self.args.filesNames, self.args.filesSizes, self.args.filesData, self.args.authorPrivateKey, self.args.projectPublicKey, _aes256_secret_random_key)
       manifestObject = manifestClass.__dict__
-
+      
       try:
 
         manifestJson = json.dumps(manifestObject).encode("utf-8")
         
-        if self.args.privateKey:
+        if self.args.authorPrivateKey:
           signObject = {
-            "sign": manifestClass.sign(manifestJson, self.args.privateKey)
+            "sign": manifestClass.sign_ecdsa(manifestJson, self.args.authorPrivateKey)
           }
 
           signJson = json.dumps(signObject).encode()
@@ -77,6 +89,7 @@ class iotaDeployTool:
         self.indexFiles = 0
         self.publishUpdate(self.indexFiles)
         self.indexFiles += 1
+
       elif self.sm == 'firmware':
         if self.indexFiles < len(self.args.filesNames):
           self.publishUpdate(self.indexFiles)
@@ -84,17 +97,23 @@ class iotaDeployTool:
         else:
           print('update published with SUCCESS')
           sys.exit()
+
       else:
         print('state invalid')
         sys.exit()
 
     def publishUpdate(self, filesIndex):
-        topicFirmware = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/" + self.args.filesNames[filesIndex]
-        (rc, mid) = self.mqttObject.publish(topicFirmware, self.args.filesData[filesIndex], self.qos, True)
         
-        if not rc == _mqtt.MQTT_ERR_SUCCESS:
-          print("can't publish firmware file.")
-          sys.exit()
+        topicFirmware = "iota/" + self.args.uuidProject + "/" + str(self.args.version) + "/" + self.args.filesNames[filesIndex]
+        
+        try: 
+          (rc, mid) = self.mqttObject.publish(topicFirmware, self.args.filesData[filesIndex], self.qos, True)
+          
+          if not rc == _mqtt.MQTT_ERR_SUCCESS:
+            print("can't publish firmware file.")
+            sys.exit()
+        except Exception as error:
+          print(error)
 
     def printDebug(self, msg):
       if self.args.debug:
