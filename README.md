@@ -72,6 +72,14 @@ The current implementation of the manifest file uses the JWS(https://jwt.io/) st
    "key":"41a656a0650b211ec990d04791397921f40ec929cbfad4ef16950c78b4de28a5558ca7edb7c8611894811c0787f690365303c2902bc1968e0ac4072d4bbcec7e2dd9693edf232806ad4f6ae821e286dc971b1a7269b9199e199bd7ea30e4f465c44c14ba9dc29aa7d5e1e6c65363c440cdc6862d4fe2995c2c5d563a8da1de74cbb3dc6edecdf9d06af2d4611e7f92f3a1dbeac5793037df7c4d98ac10993f943226ad1707ea2349f38f8d42d2e05a9bb994b421873468f95480f9d9fd2913d38963eb481147fd299cfc2f2f6c6a12a3ac6fc3ec075e5facc4b43a81f4681b5b6d2438daebe3928a41a932271664d69caf19d3a16466dca72b91758a4bea0627"
 }
    ```
+   
+   * **Signature object after base64 decode:**
+   ```json
+   {
+   "sign":"304502201affa19d22bc834c0cbca0d88d0017bfba543d263d1844c58794b8779a56624e022100d4a7687e0236c904beb14828e05f56918e96498e8fd54bc8f39957d481a95baa"
+   }
+   ```
+   
    The sign attribute present in each of the update objects consists of the author's digital signature made with his private key through the ECDSA algorithm and with the SECP256K1 curve.
    
    The key attribute in the manifest represents the random key of the AES256 algorithm that was used to encrypt the update files. This key, in turn, is encrypted with the project's public key using the RSA-2048b algorithm.
@@ -82,12 +90,6 @@ The type field defines the type of update. Currently two types **bin** and **py*
 
 The fileSize field indicates the size in bytes of the update file.
    
-   * **Signature object after base64 decode:**
-   ```json
-   {
-   "sign":"304502201affa19d22bc834c0cbca0d88d0017bfba543d263d1844c58794b8779a56624e022100d4a7687e0236c904beb14828e05f56918e96498e8fd54bc8f39957d481a95baa"
-   }
-   ```
    * **JWS unsigned:** 
   eyJ1dWlkUHJvamVjdCI6ICIxIiwgInZlcnNpb24iOiA4OCwgInR5cGUiOiAicHkiLCAiZGF0ZUV4cGlyYXRpb24iOiAiMjAyMC0wNi0wNSIsICJmaWxlcyI6IFt7Im5hbWUiOiAic3VpdC5weSIsICJzaXplIjogMTQwOTZ9LCB7Im5hbWUiOiAibWFpbi5weSIsICJzaXplIjogNDU0OX1dfQ==
   
