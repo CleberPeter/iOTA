@@ -166,8 +166,8 @@ After an upgrade device notify the update server through the following topic:
 
 The front end implementations that perform the interaction between the developer and the framework can be found at:
 
-https://github.com/CleberPeter/iota/tree/master/deploymentTools
+https://github.com/CleberPeter/SOTARU/tree/master/deploymentTools
 
 The embedded implementations that perform the interaction between the devices and the framework can be found at:
 
-https://github.com/CleberPeter/iota/tree/master/embedded
+https://github.com/CleberPeter/SOTARU/tree/master/embedded
