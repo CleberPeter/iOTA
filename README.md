@@ -164,10 +164,10 @@ After an upgrade device notify the update server through the following topic:
 
 ## Implementations
 
-The front end implementations that perform the interaction between the developer and the framework can be found at:
+The **front end** implementations that perform the interaction between the developer and the framework can be found at:
 
 https://github.com/CleberPeter/iOTA/tree/master/deploymentTools
 
-The embedded implementations that perform the interaction between the devices and the framework can be found at:
+The **embedded** implementations that perform the interaction between the devices and the framework can be found at:
 
 https://github.com/CleberPeter/iOTA/tree/master/esp32/micropython
