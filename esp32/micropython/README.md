@@ -1,4 +1,4 @@
-# iota at ESP32
+# iOTA at ESP32
 
 Implementation of the iota framework in micropython for esp32
 
