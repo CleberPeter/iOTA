@@ -38,7 +38,7 @@ A procedure for the compilation is detailed in: (https://github.com/micropython/
 $ make BOARD=GENERIC_OTA
 ```
 
-Another alternative is the use of micropython firmware adapted to OTA, available at: (https://github.com/CleberPeter/iota/blob/master/embedded/esp32/micropython/firmware_ota.bin), which is based on version 1.12 of micropython and was used for testing the implementation of this framework.
+Another alternative is the use of micropython firmware adapted to OTA, available at: (https://github.com/CleberPeter/iOTA/blob/master/esp32/micropython/firmware_ota.bin), which is based on version 1.12 of micropython and was used for testing the implementation of this framework.
 
 ### MQTT library for Micropython
 
